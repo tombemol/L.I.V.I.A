@@ -158,15 +158,32 @@ pub struct DuplicateReport {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct JournalCheckpoint {
+    pub journal_id: u64,
+    pub next_usn: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ScanIndex {
     pub root: String,
     pub engine: ScanEngine,
     pub files: Vec<FileEntry>,
+    #[serde(default)]
+    pub journal_checkpoint: Option<JournalCheckpoint>,
 }
 
 pub struct ScanBundle {
     pub report: ScanReport,
     pub index: ScanIndex,
+}
+
+pub struct IncrementalBundle {
+    pub report: ScanReport,
+    pub index: ScanIndex,
+    pub changed_entries: usize,
+    pub updated_files: usize,
+    pub removed_files: usize,
 }
 
 #[derive(Default)]
@@ -468,6 +485,7 @@ where
             root: display_root,
             engine,
             files: index_files,
+            journal_checkpoint: None,
         },
     })
 }
@@ -593,14 +611,147 @@ where
         display_root.clone(),
     );
 
+    let journal_checkpoint = volume
+        .journal()
+        .query(false)
+        .ok()
+        .map(|data| JournalCheckpoint {
+            journal_id: data.journal_id,
+            next_usn: data.next_usn,
+        });
+
     Ok(ScanBundle {
         report: scan_report,
         index: ScanIndex {
             root: display_root,
             engine,
             files: index_files,
+            journal_checkpoint,
         },
     })
+}
+
+#[cfg(target_os = "windows")]
+pub fn refresh_usn(index: &ScanIndex) -> Result<IncrementalBundle, String> {
+    use usn_journal_rs::{journal::EnumOptions, volume::Volume};
+
+    let started = Instant::now();
+    let root = PathBuf::from(&index.root);
+    let drive_letter =
+        drive_letter_root(&root).ok_or_else(|| "o índice não representa a raiz de uma unidade".to_string())?;
+    let checkpoint = index
+        .journal_checkpoint
+        .clone()
+        .ok_or_else(|| "o índice anterior não possui checkpoint do USN Journal".to_string())?;
+
+    let volume = Volume::from_drive_letter(drive_letter).map_err(|error| error.to_string())?;
+    let journal = volume.journal();
+    let journal_data = journal.query(false).map_err(|error| error.to_string())?;
+
+    if journal_data.journal_id != checkpoint.journal_id {
+        return Err("o USN Journal foi recriado desde o último índice".to_string());
+    }
+
+    if checkpoint.next_usn < journal_data.lowest_valid_usn
+        || checkpoint.next_usn > journal_data.next_usn
+    {
+        return Err("o checkpoint anterior saiu da janela válida do USN Journal".to_string());
+    }
+
+    let options = EnumOptions {
+        start_usn: checkpoint.next_usn,
+        ..EnumOptions::default()
+    };
+
+    let mut resolver = volume.path_resolver_with_cache();
+    let mut changed_paths = HashSet::<PathBuf>::new();
+    let mut changed_entries = 0_usize;
+
+    for result in journal
+        .iter_with_options(options)
+        .map_err(|error| error.to_string())?
+    {
+        let entry = result.map_err(|error| error.to_string())?;
+
+        if entry.usn < checkpoint.next_usn {
+            continue;
+        }
+        if entry.usn >= journal_data.next_usn {
+            break;
+        }
+
+        changed_entries += 1;
+        if changed_entries > 25_000 {
+            return Err("há mudanças demais para uma atualização incremental confiável".to_string());
+        }
+
+        if entry.is_dir() {
+            return Err("houve alteração estrutural em diretório; o índice completo será reconstruído".to_string());
+        }
+
+        let path = resolver
+            .resolve_path(&entry)
+            .ok_or_else(|| "não foi possível resolver o caminho de uma alteração do USN".to_string())?;
+
+        if is_scope_inside_root(&path, &root) {
+            changed_paths.insert(path);
+        }
+    }
+
+    let now = SystemTime::now();
+    let mut next = index.clone();
+    let mut updated_files = 0_usize;
+    let mut removed_files = 0_usize;
+
+    for path in changed_paths {
+        let position = next
+            .files
+            .iter()
+            .position(|file| same_windows_path(Path::new(&file.path), &path));
+
+        let existed = position.is_some();
+        if let Some(position) = position {
+            next.files.swap_remove(position);
+        }
+
+        match fs::metadata(&path) {
+            Ok(metadata) if metadata.is_file() => {
+                next.files.push(file_entry_from_metadata(&path, &metadata, now));
+                updated_files += 1;
+            }
+            _ if existed => {
+                removed_files += 1;
+            }
+            _ => {}
+        }
+    }
+
+    next.engine = ScanEngine {
+        mode: "ntfs-usn-incremental".to_string(),
+        label: "NTFS / USN incremental".to_string(),
+        accelerated: true,
+        fallback_reason: None,
+    };
+    next.journal_checkpoint = Some(JournalCheckpoint {
+        journal_id: journal_data.journal_id,
+        next_usn: journal_data.next_usn,
+    });
+
+    let mut report = browse_index(&next, next.root.clone())?;
+    report.duration_ms = started.elapsed().as_millis();
+
+    Ok(IncrementalBundle {
+        report,
+        index: next,
+        changed_entries,
+        updated_files,
+        removed_files,
+    })
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn refresh_usn(_index: &ScanIndex) -> Result<IncrementalBundle, String> {
+    Err("USN Journal está disponível apenas no Windows.".to_string())
 }
 
 pub fn browse_index(index: &ScanIndex, path: String) -> Result<ScanReport, String> {
@@ -1062,6 +1213,18 @@ fn top_level_name(root: &Path, path: &Path) -> String {
 
 fn is_scope_inside_root(candidate: &Path, scope: &Path) -> bool {
     candidate == scope || candidate.strip_prefix(scope).is_ok()
+}
+
+fn same_windows_path(left: &Path, right: &Path) -> bool {
+    left.to_string_lossy()
+        .replace('/', "\\")
+        .trim_end_matches('\\')
+        .eq_ignore_ascii_case(
+            right
+                .to_string_lossy()
+                .replace('/', "\\")
+                .trim_end_matches('\\'),
+        )
 }
 
 fn contains_case_insensitive(haystack: &str, needle: &str) -> bool {
