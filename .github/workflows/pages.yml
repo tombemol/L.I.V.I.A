@@ -1,0 +1,55 @@
+name: Deploy landing page
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "site/**"
+      - "docs/assets/livia-mark.svg"
+      - "public/livia/livia-sprites.webp"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare static site
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site/assets
+          cp -R site/. _site/
+          cp docs/assets/livia-mark.svg _site/assets/livia-mark.svg
+          cp public/livia/livia-sprites.webp _site/assets/livia-sprites.webp
+          touch _site/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

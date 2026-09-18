@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#11131a" />
+  <meta name="description" content="L.I.V.I.A. é um analisador de armazenamento gratuito e open source para descobrir o que está ocupando espaço no seu computador." />
+  <meta property="og:title" content="L.I.V.I.A. — Seu armazenamento em perspectiva" />
+  <meta property="og:description" content="Descubra para onde foi o espaço do seu PC. Grátis, open source e sem assinatura." />
+  <meta property="og:type" content="website" />
+  <title>L.I.V.I.A. — Seu armazenamento em perspectiva</title>
+  <link rel="icon" href="./assets/livia-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="nav-wrap">
+    <nav class="nav" aria-label="Navegação principal">
+      <a class="brand" href="#top" aria-label="L.I.V.I.A. início">
+        <img src="./assets/livia-mark.svg" alt="" />
+        <span>L.I.V.I.A.</span>
+      </a>
+      <div class="nav-links">
+        <a href="#recursos">Recursos</a>
+        <a href="#seguranca">Segurança</a>
+        <a href="#download">Download</a>
+        <a class="nav-github" href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">GitHub ↗</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero section">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="dot"></span> gratuito · open source · local-first</div>
+        <h1>Descubra para onde foi <span>o espaço do seu PC.</span></h1>
+        <p class="lead">A L.I.V.I.A. analisa seu armazenamento, encontra arquivos e pastas gigantes e transforma a bagunça do disco em informação que dá para entender.</p>
+
+        <div class="hero-actions">
+          <a id="primary-download" class="button primary" href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">
+            <span id="primary-download-icon">↓</span>
+            <span id="primary-download-label">Baixar para Windows</span>
+          </a>
+          <a class="button secondary" href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">Ver código ↗</a>
+        </div>
+
+        <div class="release-line">
+          <span id="release-status">Buscando a versão mais recente…</span>
+          <span class="sep">•</span>
+          <span>Windows agora · Linux em preparação</span>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="Prévia da interface da L.I.V.I.A.">
+        <div class="glow"></div>
+        <div class="app-window">
+          <div class="titlebar">
+            <div class="window-brand">
+              <img src="./assets/livia-mark.svg" alt="" />
+              <span>L.I.V.I.A.</span>
+            </div>
+            <div class="window-controls"><i></i><i></i><i></i></div>
+          </div>
+          <div class="app-body">
+            <aside class="sidebar" aria-hidden="true">
+              <div class="side-item active">◫ <span>Visão geral</span></div>
+              <div class="side-item">⌕ <span>Analisar</span></div>
+              <div class="side-item">▰ <span>Pastas</span></div>
+              <div class="side-item">◎ <span>Duplicatas</span></div>
+              <div class="side-item">◷ <span>Histórico</span></div>
+            </aside>
+            <div class="dashboard">
+              <div class="dash-top">
+                <div>
+                  <span class="kicker">Disco local (C:)</span>
+                  <strong>Seu armazenamento</strong>
+                </div>
+                <span class="scan-pill">índice atualizado</span>
+              </div>
+              <div class="cards">
+                <article class="usage-card">
+                  <div class="donut">
+                    <div class="donut-core"><strong>237 GB</strong><span>em uso</span></div>
+                  </div>
+                  <div class="legend">
+                    <span><b class="c1"></b> Vídeos <strong>89 GB</strong></span>
+                    <span><b class="c2"></b> Apps <strong>62 GB</strong></span>
+                    <span><b class="c3"></b> Imagens <strong>33 GB</strong></span>
+                    <span><b class="c4"></b> Outros <strong>53 GB</strong></span>
+                  </div>
+                </article>
+                <article class="folder-card">
+                  <div class="card-head"><strong>Maiores pastas</strong><span>ver todas</span></div>
+                  <div class="folder-row"><span>Vídeos</span><i style="--w:92%"></i><strong>89 GB</strong></div>
+                  <div class="folder-row"><span>Program Files</span><i style="--w:67%"></i><strong>62 GB</strong></div>
+                  <div class="folder-row"><span>Games</span><i style="--w:45%"></i><strong>39 GB</strong></div>
+                  <div class="folder-row"><span>Downloads</span><i style="--w:24%"></i><strong>19 GB</strong></div>
+                </article>
+              </div>
+              <div class="livia-tip">
+                <img src="./assets/livia-sprites.webp" alt="Expressões da personagem Lívia" />
+                <p><strong>Encontrei os grandões.</strong><br />Sua pasta de vídeos está ocupando mais espaço que o bom senso recomendaria.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-strip" aria-label="Diferenciais">
+      <div><strong>R$ 0</strong><span>Sem plano premium</span></div>
+      <div><strong>Local-first</strong><span>Seus dados ficam no PC</span></div>
+      <div><strong>MIT</strong><span>Código aberto</span></div>
+      <div><strong>Sem anúncios</strong><span>Porque já existem anúncios demais</span></div>
+    </section>
+
+    <section id="recursos" class="section features">
+      <div class="section-heading">
+        <span class="eyebrow">entenda antes de apagar</span>
+        <h2>Seu disco, explicado sem caça ao tesouro.</h2>
+        <p>A L.I.V.I.A. não tenta ser um “otimizador mágico”. Ela mostra os dados, confirma duplicatas e deixa a decisão com você.</p>
+      </div>
+
+      <div class="feature-grid">
+        <article class="feature">
+          <span class="feature-icon">◔</span>
+          <h3>Visualize o espaço</h3>
+          <p>Treemap, gráficos de pizza e rankings transformam gigabytes abstratos em algo que você consegue enxergar.</p>
+        </article>
+        <article class="feature">
+          <span class="feature-icon">⌕</span>
+          <h3>Encontre os culpados</h3>
+          <p>Busque o índice inteiro, filtre arquivos e descubra rapidamente quais pastas cresceram mais.</p>
+        </article>
+        <article class="feature">
+          <span class="feature-icon">≋</span>
+          <h3>Confirme duplicatas</h3>
+          <p>Triagem por tamanho e confirmação BLAKE3 antes de chamar dois arquivos de iguais. Radical: verificar antes de afirmar.</p>
+        </article>
+        <article class="feature">
+          <span class="feature-icon">↶</span>
+          <h3>Limpe com cautela</h3>
+          <p>Seleção assistida, revisão antes da ação, Lixeira do sistema e desfazer quando a restauração pode ser feita com segurança.</p>
+        </article>
+        <article class="feature">
+          <span class="feature-icon">◷</span>
+          <h3>Acompanhe mudanças</h3>
+          <p>Snapshots locais mostram como o armazenamento mudou e ajudam a perceber de onde o crescimento veio.</p>
+        </article>
+        <article class="feature mascot-feature">
+          <img src="./assets/livia-sprites.webp" alt="" />
+          <h3>Uma guia que presta atenção</h3>
+          <p>A Lívia reage ao contexto, explica tipos de arquivo e ajuda sem transformar sugestões em ações automáticas.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="seguranca" class="section safety">
+      <div class="safety-card">
+        <div>
+          <span class="eyebrow">privacidade por padrão</span>
+          <h2>Seu armazenamento não precisa sair do seu computador.</h2>
+          <p>Análise, índice, snapshots e histórico ficam localmente. A proposta é simples: um analisador de disco não deveria precisar bisbilhotar sua vida na nuvem.</p>
+        </div>
+        <ul>
+          <li><span>✓</span> Sem conta obrigatória</li>
+          <li><span>✓</span> Sem assinatura</li>
+          <li><span>✓</span> Sem anúncios</li>
+          <li><span>✓</span> Código-fonte público</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="download" class="section download">
+      <div class="download-panel">
+        <div class="download-copy">
+          <span class="eyebrow">baixe e veja por conta própria</span>
+          <h2>Grátis. Sem pegadinha.</h2>
+          <p>Escolha sua plataforma. O botão usa os arquivos publicados nas GitHub Releases, então novas versões aparecem aqui sem alguém ter que editar o site na unha.</p>
+          <span id="download-version" class="version-chip">Versão mais recente</span>
+        </div>
+
+        <div class="download-options">
+          <a id="windows-download" class="platform-card ready" href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">
+            <span class="platform-icon">⊞</span>
+            <span><strong>Windows</strong><small>x64 · instalador</small></span>
+            <b>Baixar ↓</b>
+          </a>
+          <a id="linux-download" class="platform-card" href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">
+            <span class="platform-icon">◉</span>
+            <span><strong>Linux</strong><small>AppImage / .deb</small></span>
+            <b id="linux-label">Em preparação</b>
+          </a>
+        </div>
+
+        <p class="download-note">As builds atuais de Windows ainda podem acionar o SmartScreen por não possuírem assinatura Authenticode confiável. O código e as releases estão públicos para auditoria.</p>
+      </div>
+    </section>
+
+    <section class="section mascot-section">
+      <div class="mascot-copy">
+        <span class="eyebrow">ela também tem opiniões</span>
+        <h2>Conheça a Lívia.</h2>
+        <p>Normal, feliz, explicando, julgando, preocupada ou escaneando. A personagem muda com o que está acontecendo no aplicativo sem ocupar a tela inteira como se fosse dona do computador.</p>
+      </div>
+      <div class="sprite-stage">
+        <img src="./assets/livia-sprites.webp" alt="Lívia em suas seis expressões oficiais" />
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="brand footer-brand"><img src="./assets/livia-mark.svg" alt="" /><span>L.I.V.I.A.</span></div>
+      <p>Leitura Inteligente e Visualização de Informações de Armazenamento.</p>
+      <div class="footer-links">
+        <a href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">Código</a>
+        <a href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">Releases</a>
+        <a href="https://github.com/tombemol/L.I.V.I.A/issues" target="_blank" rel="noreferrer">Issues</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
