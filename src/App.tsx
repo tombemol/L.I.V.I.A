@@ -31,6 +31,7 @@ import {
 import { StorageTreemap } from "./components/StorageTreemap";
 import { ExtensionList } from "./components/ExtensionList";
 import { DistributionPie } from "./components/DistributionPie";
+import { LiviaAssistant } from "./components/LiviaAssistant";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
 import type {
   DuplicateProgress,
@@ -442,6 +443,7 @@ export default function App() {
             </button>
           </div>
         </section>
+        <LiviaAssistant busy progress={progress} error={error} />
       </main>
     );
   }
@@ -497,6 +499,7 @@ export default function App() {
 
           {error ? <div className="error-banner">{error}</div> : null}
         </section>
+        <LiviaAssistant error={error} />
       </main>
     );
   }
@@ -972,6 +975,15 @@ export default function App() {
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
+
+      <LiviaAssistant
+        report={report}
+        browsing={browsing}
+        error={error}
+        selectedFile={selectedFile}
+        duplicateBusy={duplicateBusy}
+        duplicateReport={duplicateReport}
+      />
     </main>
   );
 }
