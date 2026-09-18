@@ -3,6 +3,7 @@ use std::{
     cmp::{Ordering as CmpOrdering, Reverse},
     collections::{BinaryHeap, HashMap, HashSet},
     fs,
+    io::{BufReader, Read, Seek, SeekFrom},
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering as AtomicOrdering},
@@ -18,6 +19,10 @@ const LARGEST_LIMIT: usize = 500;
 const RECOMMENDATION_LIMIT: usize = 50;
 const PROGRESS_INTERVAL_MS: u128 = 120;
 const SEARCH_LIMIT_MAX: usize = 500;
+const DUPLICATE_MIN_SIZE: u64 = ONE_MB;
+const PARTIAL_HASH_BYTES: usize = 64 * 1024;
+const FULL_HASH_BUFFER_BYTES: usize = ONE_MB as usize;
+const DUPLICATE_GROUP_LIMIT: usize = 100;
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -115,6 +120,40 @@ pub struct SearchResponse {
     pub total: usize,
     pub duration_ms: u128,
     pub files: Vec<FileEntry>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DuplicateProgress {
+    pub phase: String,
+    pub candidate_files: usize,
+    pub partial_hashed_files: usize,
+    pub fully_hashed_files: usize,
+    pub skipped_files: usize,
+    pub current_path: String,
+    pub elapsed_ms: u128,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DuplicateGroup {
+    pub size: u64,
+    pub count: usize,
+    pub reclaimable_bytes: u64,
+    pub hash: String,
+    pub files: Vec<FileEntry>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DuplicateReport {
+    pub groups: Vec<DuplicateGroup>,
+    pub candidate_files: usize,
+    pub partial_hashed_files: usize,
+    pub fully_hashed_files: usize,
+    pub skipped_files: usize,
+    pub reclaimable_bytes: u64,
+    pub duration_ms: u128,
 }
 
 #[derive(Debug, Clone)]
@@ -661,6 +700,215 @@ pub fn search_index(
         duration_ms: started.elapsed().as_millis(),
         files,
     }
+}
+
+pub fn find_duplicates<F>(
+    index: &ScanIndex,
+    scope: String,
+    mut on_progress: F,
+) -> Result<DuplicateReport, String>
+where
+    F: FnMut(DuplicateProgress),
+{
+    let started = Instant::now();
+    let scope_path = PathBuf::from(&scope);
+
+    if !is_scope_inside_root(&scope_path, Path::new(&index.root)) {
+        return Err("Este caminho não pertence ao índice atual.".to_string());
+    }
+
+    let mut size_groups = HashMap::<u64, Vec<&FileEntry>>::new();
+    for file in index.files.iter().filter(|file| {
+        file.size >= DUPLICATE_MIN_SIZE
+            && is_scope_inside_root(Path::new(&file.path), &scope_path)
+    }) {
+        size_groups.entry(file.size).or_default().push(file);
+    }
+    size_groups.retain(|_, files| files.len() > 1);
+
+    let candidate_files = size_groups.values().map(Vec::len).sum::<usize>();
+    let mut partial_hashed_files = 0_usize;
+    let mut fully_hashed_files = 0_usize;
+    let mut skipped_files = 0_usize;
+    let mut groups = Vec::<DuplicateGroup>::new();
+    let mut last_progress = Instant::now();
+
+    for (size, files) in size_groups {
+        let mut partial_groups = HashMap::<String, Vec<&FileEntry>>::new();
+
+        for file in files {
+            match partial_hash(file) {
+                Ok(hash) => {
+                    partial_hashed_files += 1;
+                    partial_groups.entry(hash).or_default().push(file);
+                }
+                Err(_) => skipped_files += 1,
+            }
+
+            emit_duplicate_progress_if_needed(
+                &mut on_progress,
+                "partial",
+                candidate_files,
+                partial_hashed_files,
+                fully_hashed_files,
+                skipped_files,
+                &file.path,
+                started,
+                &mut last_progress,
+            );
+        }
+
+        for partial_matches in partial_groups.into_values().filter(|items| items.len() > 1) {
+            let mut full_groups = HashMap::<String, Vec<&FileEntry>>::new();
+
+            for file in partial_matches {
+                match full_hash(file) {
+                    Ok(hash) => {
+                        fully_hashed_files += 1;
+                        full_groups.entry(hash).or_default().push(file);
+                    }
+                    Err(_) => skipped_files += 1,
+                }
+
+                emit_duplicate_progress_if_needed(
+                    &mut on_progress,
+                    "full",
+                    candidate_files,
+                    partial_hashed_files,
+                    fully_hashed_files,
+                    skipped_files,
+                    &file.path,
+                    started,
+                    &mut last_progress,
+                );
+            }
+
+            for (hash, mut files) in full_groups.into_iter().filter(|(_, items)| items.len() > 1) {
+                files.sort_by(|a, b| a.path.cmp(&b.path));
+                let count = files.len();
+                groups.push(DuplicateGroup {
+                    size,
+                    count,
+                    reclaimable_bytes: size.saturating_mul(count.saturating_sub(1) as u64),
+                    hash,
+                    files: files.into_iter().cloned().collect(),
+                });
+            }
+        }
+    }
+
+    groups.sort_by(|a, b| {
+        b.reclaimable_bytes
+            .cmp(&a.reclaimable_bytes)
+            .then_with(|| b.count.cmp(&a.count))
+            .then_with(|| b.size.cmp(&a.size))
+    });
+    groups.truncate(DUPLICATE_GROUP_LIMIT);
+
+    let reclaimable_bytes = groups
+        .iter()
+        .map(|group| group.reclaimable_bytes)
+        .fold(0_u64, u64::saturating_add);
+
+    on_progress(DuplicateProgress {
+        phase: "done".to_string(),
+        candidate_files,
+        partial_hashed_files,
+        fully_hashed_files,
+        skipped_files,
+        current_path: scope,
+        elapsed_ms: started.elapsed().as_millis(),
+    });
+
+    Ok(DuplicateReport {
+        groups,
+        candidate_files,
+        partial_hashed_files,
+        fully_hashed_files,
+        skipped_files,
+        reclaimable_bytes,
+        duration_ms: started.elapsed().as_millis(),
+    })
+}
+
+fn partial_hash(file: &FileEntry) -> std::io::Result<String> {
+    let mut input = open_stable_file(file)?;
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(&file.size.to_le_bytes());
+
+    let sample_len = PARTIAL_HASH_BYTES.min(file.size as usize);
+    let mut first = vec![0_u8; sample_len];
+    input.read_exact(&mut first)?;
+    hasher.update(&first);
+
+    if file.size > sample_len as u64 {
+        let tail_len = PARTIAL_HASH_BYTES.min(file.size as usize);
+        input.seek(SeekFrom::End(-(tail_len as i64)))?;
+        let mut last = vec![0_u8; tail_len];
+        input.read_exact(&mut last)?;
+        hasher.update(&last);
+    }
+
+    Ok(hasher.finalize().to_hex().to_string())
+}
+
+fn full_hash(file: &FileEntry) -> std::io::Result<String> {
+    let input = open_stable_file(file)?;
+    let mut reader = BufReader::with_capacity(FULL_HASH_BUFFER_BYTES, input);
+    let mut hasher = blake3::Hasher::new();
+    let mut buffer = vec![0_u8; FULL_HASH_BUFFER_BYTES];
+
+    loop {
+        let read = reader.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+
+    Ok(hasher.finalize().to_hex().to_string())
+}
+
+fn open_stable_file(file: &FileEntry) -> std::io::Result<fs::File> {
+    let input = fs::File::open(&file.path)?;
+    let metadata = input.metadata()?;
+    if metadata.len() != file.size {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "o arquivo mudou de tamanho desde a indexação",
+        ));
+    }
+    Ok(input)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn emit_duplicate_progress_if_needed<F>(
+    on_progress: &mut F,
+    phase: &str,
+    candidate_files: usize,
+    partial_hashed_files: usize,
+    fully_hashed_files: usize,
+    skipped_files: usize,
+    current_path: &str,
+    started: Instant,
+    last_progress: &mut Instant,
+) where
+    F: FnMut(DuplicateProgress),
+{
+    if last_progress.elapsed().as_millis() < PROGRESS_INTERVAL_MS {
+        return;
+    }
+
+    on_progress(DuplicateProgress {
+        phase: phase.to_string(),
+        candidate_files,
+        partial_hashed_files,
+        fully_hashed_files,
+        skipped_files,
+        current_path: current_path.to_string(),
+        elapsed_ms: started.elapsed().as_millis(),
+    });
+    *last_progress = Instant::now();
 }
 
 fn validate_root(root: &Path) -> Result<(), String> {
