@@ -72,6 +72,9 @@ pub struct Recommendation {
     pub reason: String,
     pub risk: String,
     pub confidence: u8,
+    pub impact: String,
+    pub evidence: Vec<String>,
+    pub safety_note: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1266,24 +1269,53 @@ fn recommend(file: &FileEntry) -> Option<Recommendation> {
 
     let extension = file.extension.as_str();
     let age = file.age_days.unwrap_or(0);
+    let normalized_path = file.path.replace('/', "\\").to_ascii_lowercase();
+    let in_user_temp = normalized_path.contains("\\appdata\\local\\temp\\");
+    let in_downloads = normalized_path.contains("\\downloads\\");
 
-    let (category, reason, risk, confidence) =
-        if matches!(extension, ".tmp" | ".temp" | ".dmp") && age >= 7 {
+    let (category, reason, risk, confidence, safety_note) =
+        if in_user_temp && age >= 7 {
             (
-                "Temporário",
-                "Tipo temporário e sem alteração recente.",
+                "Temporário do usuário",
+                "Está na pasta Temp do perfil e não é alterado há pelo menos uma semana.",
+                "Baixo",
+                94,
+                "Ainda vale fechar aplicativos antes da limpeza: temporário em uso continua sendo temporário em uso.",
+            )
+        } else if matches!(extension, ".tmp" | ".temp" | ".dmp") && age >= 7 {
+            (
+                "Temporário / diagnóstico",
+                "O tipo costuma ser transitório e o arquivo está sem alteração recente.",
                 "Baixo",
                 92,
+                "Arquivos DMP podem ser úteis para investigar travamentos. Revise se houver diagnóstico em andamento.",
             )
-        } else if matches!(extension, ".zip" | ".rar" | ".7z" | ".iso")
+        } else if extension == ".log" && age >= 30 && file.size >= 50 * ONE_MB {
+            (
+                "Log antigo",
+                "É um log grande e está sem alteração há pelo menos 30 dias.",
+                "Revisar",
+                84,
+                "Logs podem ser úteis para suporte e auditoria. Confirme se o aplicativo ainda precisa desse histórico.",
+            )
+        } else if matches!(extension, ".iso") && age >= 90 && file.size >= 500 * ONE_MB {
+            (
+                "Imagem de disco antiga",
+                "Imagem de disco grande e antiga. Muitas ficam esquecidas depois de uma instalação.",
+                "Revisar",
+                83,
+                "Confirme se a ISO ainda é sua mídia de instalação ou recuperação antes de movê-la.",
+            )
+        } else if matches!(extension, ".zip" | ".rar" | ".7z")
             && age >= 120
             && file.size >= 250 * ONE_MB
         {
             (
-                "Arquivo compactado",
-                "Arquivo grande, compactado e antigo. Confirme se ainda precisa dele.",
+                "Arquivo compactado antigo",
+                "Pacote grande, antigo e sem alteração recente.",
                 "Revisar",
-                78,
+                79,
+                "Verifique se o conteúdo já foi extraído ou se este arquivo é a única cópia.",
             )
         } else if matches!(extension, ".exe" | ".msi" | ".msix")
             && age >= 180
@@ -1293,25 +1325,56 @@ fn recommend(file: &FileEntry) -> Option<Recommendation> {
                 "Instalador antigo",
                 "Instalador grande sem alteração há meses. Pode já ter cumprido a função.",
                 "Revisar",
-                76,
+                if in_downloads { 84 } else { 77 },
+                "Instaladores podem ser úteis para reinstalação offline. A L.I.V.I.A. não presume que exista outra cópia.",
+            )
+        } else if matches!(extension, ".bak" | ".old") && age >= 90 && file.size >= 50 * ONE_MB {
+            (
+                "Backup antigo",
+                "A extensão sugere uma cópia de backup antiga e o arquivo está sem alteração há meses.",
+                "Revisar",
+                74,
+                "Uma extensão de backup não prova redundância. Confirme a existência da versão atual antes de limpar.",
             )
         } else if file.size >= 2 * ONE_GB && age >= 180 {
             (
-                "Arquivo muito grande",
+                "Arquivo muito grande e antigo",
                 "Ocupa pelo menos 2 GB e não é alterado há mais de seis meses.",
                 "Revisar",
-                70,
+                72,
+                "Tamanho e idade não tornam um arquivo descartável. Use o Explorer para confirmar o contexto.",
             )
         } else if file.size >= 5 * ONE_GB {
             (
                 "Arquivo muito grande",
-                "Ocupa pelo menos 5 GB. Vale confirmar se ainda precisa ficar neste disco.",
+                "Ocupa pelo menos 5 GB e merece uma revisão mesmo que seja recente.",
                 "Revisar",
-                64,
+                65,
+                "Esta é uma recomendação de atenção, não de exclusão.",
             )
         } else {
             return None;
         };
+
+    let impact = if file.size >= 2 * ONE_GB {
+        "Alto"
+    } else if file.size >= 250 * ONE_MB {
+        "Médio"
+    } else {
+        "Baixo"
+    };
+
+    let mut evidence = Vec::<String>::new();
+    evidence.push(format!("Tamanho: {}", human_size(file.size)));
+    if let Some(days) = file.age_days {
+        evidence.push(format!("Sem alteração há {days} dia(s)"));
+    }
+    if in_user_temp {
+        evidence.push("Local: Temp do perfil".to_string());
+    } else if in_downloads {
+        evidence.push("Local: Downloads".to_string());
+    }
+    evidence.push(format!("Tipo: {}", file.extension));
 
     Some(Recommendation {
         path: file.path.clone(),
@@ -1322,7 +1385,20 @@ fn recommend(file: &FileEntry) -> Option<Recommendation> {
         reason: reason.to_string(),
         risk: risk.to_string(),
         confidence,
+        impact: impact.to_string(),
+        evidence,
+        safety_note: safety_note.to_string(),
     })
+}
+
+fn human_size(bytes: u64) -> String {
+    if bytes >= ONE_GB {
+        format!("{:.1} GB", bytes as f64 / ONE_GB as f64)
+    } else if bytes >= ONE_MB {
+        format!("{:.0} MB", bytes as f64 / ONE_MB as f64)
+    } else {
+        format!("{bytes} B")
+    }
 }
 
 fn is_protected_file(name: &str) -> bool {
