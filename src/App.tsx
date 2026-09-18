@@ -316,6 +316,11 @@ export default function App() {
   }
 
   function toggleCleanupFile(file: FileEntry) {
+    if (!cleanupSelection[file.path] && cleanupFiles.length >= 200) {
+      setError("A limpeza assistida aceita no máximo 200 arquivos por operação.");
+      return;
+    }
+
     setCleanupSelection((current) => {
       const next = { ...current };
       if (next[file.path]) delete next[file.path];
@@ -446,7 +451,7 @@ export default function App() {
         )
       );
 
-      if (selectedFile && movedPaths.has(selectedFile.path)) {
+      if (result.movedFiles.length) {
         setSelectedFile(null);
       }
 
@@ -487,8 +492,9 @@ export default function App() {
       }
 
       if (result.failed.length) {
+        const firstReason = result.failed[0]?.reason;
         setError(
-          `${result.failed.length} arquivo(s) foram preservados porque mudaram, estão protegidos ou não puderam ser enviados à Lixeira.`
+          `${result.failed.length} arquivo(s) foram preservados porque mudaram, estão protegidos ou não puderam ser enviados à Lixeira.${firstReason ? ` Exemplo: ${firstReason}` : ""}`
         );
       }
     } catch (reason) {

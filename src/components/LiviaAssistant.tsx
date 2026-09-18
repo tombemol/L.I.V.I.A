@@ -154,21 +154,21 @@ export function LiviaAssistant({
       };
     }
 
-    if (lastCleanup?.files) {
-      return {
-        mood: "celebrating",
-        title: "Limpeza concluída",
-        message: `${lastCleanup.files.toLocaleString("pt-BR")} arquivo(s) foram para a Lixeira, liberando até ${formatBytes(lastCleanup.bytes)}. Nada de exclusão permanente escondida atrás de botão bonito.`,
-        key: `cleanup-done:${lastCleanup.files}:${lastCleanup.bytes}`
-      };
-    }
-
     if (selectedFile) {
       return {
         mood: "explaining",
         title: selectedFile.name,
         message: fileComment(selectedFile),
         key: `file:${selectedFile.path}`
+      };
+    }
+
+    if (lastCleanup?.files) {
+      return {
+        mood: "celebrating",
+        title: "Limpeza concluída",
+        message: `${lastCleanup.files.toLocaleString("pt-BR")} arquivo(s) foram para a Lixeira, liberando até ${formatBytes(lastCleanup.bytes)}. Nada de exclusão permanente escondida atrás de botão bonito.`,
+        key: `cleanup-done:${lastCleanup.files}:${lastCleanup.bytes}`
       };
     }
 
