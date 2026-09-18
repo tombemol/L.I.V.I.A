@@ -42,6 +42,10 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
+            - recomendações explicáveis com evidências, confiança, risco e impacto;
+            - novas regras para Temp do usuário, logs antigos, ISOs, backups e instaladores;
+            - alertas de segurança específicos por categoria antes da limpeza;
+            - Lívia explica a recomendação principal em linguagem humana;
             - histórico visual do armazenamento com gráfico temporal e filtros de período;
             - comparação de crescimento/redução por pasta e extensão;
             - snapshots agora guardam breakdown resumido de pastas e tipos;
