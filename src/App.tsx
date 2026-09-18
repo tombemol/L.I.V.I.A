@@ -776,7 +776,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.5.0</span>
+            <span className="version-pill">v0.5.1</span>
           </div>
         </header>
 
@@ -830,7 +830,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.5.0</span>
+            <span className="version-pill">v0.5.1</span>
           </div>
         </header>
 
@@ -1391,19 +1391,37 @@ export default function App() {
                   <span title={item.path}>{shortPath(item.path)}</span>
                 </div>
                 <div className="recommendation-reason">
-                  <span>{item.category}</span>
-                  <small>{item.reason}</small>
+                  <div className="recommendation-labels">
+                    <span>{item.category}</span>
+                    <small className={item.risk === "Baixo" ? "risk-low" : "risk-review"}>
+                      risco: {item.risk}
+                    </small>
+                    <small>impacto: {item.impact}</small>
+                  </div>
+                  <small className="recommendation-copy">{item.reason}</small>
+                  <div className="recommendation-evidence">
+                    {item.evidence.slice(0, 3).map((evidence) => (
+                      <span key={evidence}>{evidence}</span>
+                    ))}
+                  </div>
+                  <small className="recommendation-safety">{item.safetyNote}</small>
                 </div>
                 <div className="recommendation-meta">
                   <strong>{formatBytes(item.size)}</strong>
                   <span>{formatAge(item.ageDays)}</span>
+                  <div className="confidence-block" title={`Confiança da regra: ${item.confidence}%`}>
+                    <small>{item.confidence}% confiança</small>
+                    <div className="confidence-track">
+                      <span style={{ width: `${item.confidence}%` }} />
+                    </div>
+                  </div>
                   <button
                     className={`recommendation-action${cleanupSelection[item.path] ? " selected" : ""}`}
                     type="button"
                     onClick={() => toggleCleanupFile(recommendationToFile(item))}
                   >
                     <Trash2 size={12} />
-                    {cleanupSelection[item.path] ? "Selecionado" : "Limpar"}
+                    {cleanupSelection[item.path] ? "Selecionado" : "Revisar limpeza"}
                   </button>
                 </div>
               </div>
@@ -1422,7 +1440,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.5.0 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
+        <span>v0.5.1 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
