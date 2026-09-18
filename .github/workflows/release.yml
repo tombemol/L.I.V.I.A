@@ -42,6 +42,9 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
+            - atualização incremental NTFS via USN Journal quando o checkpoint continua válido;
+            - fallback automático para reconstrução completa quando a atualização incremental não é segura;
+            - status da atualização incremental exibido no dashboard e explicado pela Lívia;
             - índice persistente restaurado automaticamente entre execuções;
             - snapshots locais do armazenamento e mini timeline no dashboard;
             - delta de crescimento/redução entre os snapshots mais recentes;
