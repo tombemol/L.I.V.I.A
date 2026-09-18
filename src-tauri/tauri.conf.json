@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "L.I.V.I.A.",
+  "version": "0.1.0",
+  "identifier": "com.tombemol.livia",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "L.I.V.I.A.",
+        "width": 1320,
+        "height": 860,
+        "minWidth": 900,
+        "minHeight": 620,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "category": "Utility",
+    "shortDescription": "Análise visual e inteligente de armazenamento",
+    "longDescription": "Analisa pastas e unidades no Windows, visualiza o uso do armazenamento e sugere itens que merecem revisão."
+  }
+}
