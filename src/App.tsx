@@ -145,6 +145,25 @@ function formatModified(seconds: number | null) {
   return new Date(seconds * 1000).toLocaleString("pt-BR");
 }
 
+function recommendationToFile(
+  item: ScanReport["recommendations"][number]
+): FileEntry {
+  const dot = item.name.lastIndexOf(".");
+  const extension =
+    dot > 0 && dot < item.name.length - 1
+      ? item.name.slice(dot).toLocaleLowerCase("pt-BR")
+      : "sem extensão";
+
+  return {
+    path: item.path,
+    name: item.name,
+    size: item.size,
+    extension,
+    modifiedSecs: null,
+    ageDays: item.ageDays
+  };
+}
+
 export default function App() {
   const [report, setReport] = useState<ScanReport | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1075,6 +1094,14 @@ export default function App() {
                 <div className="recommendation-meta">
                   <strong>{formatBytes(item.size)}</strong>
                   <span>{formatAge(item.ageDays)}</span>
+                  <button
+                    className={`recommendation-action${cleanupSelection[item.path] ? " selected" : ""}`}
+                    type="button"
+                    onClick={() => toggleCleanupFile(recommendationToFile(item))}
+                  >
+                    <Trash2 size={12} />
+                    {cleanupSelection[item.path] ? "Selecionado" : "Limpar"}
+                  </button>
                 </div>
               </div>
             ))}
