@@ -34,6 +34,7 @@ import { ExtensionList } from "./components/ExtensionList";
 import { DistributionPie } from "./components/DistributionPie";
 import { LiviaAssistant } from "./components/LiviaAssistant";
 import { CleanupTray } from "./components/CleanupTray";
+import { StorageHistory } from "./components/StorageHistory";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
 import type {
   CachedIndexResponse,
@@ -486,7 +487,7 @@ export default function App() {
       try {
         const history = await invoke<StorageSnapshot[]>("snapshot_history", {
           root: result.indexRoot,
-          limit: 12
+          limit: 60
         });
         setSnapshots(history);
       } catch {
@@ -539,7 +540,7 @@ export default function App() {
       try {
         const history = await invoke<StorageSnapshot[]>("snapshot_history", {
           root: result.report.indexRoot,
-          limit: 12
+          limit: 60
         });
         setSnapshots(history);
       } catch {
@@ -775,7 +776,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.4.1</span>
+            <span className="version-pill">v0.5.0</span>
           </div>
         </header>
 
@@ -829,7 +830,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.4.1</span>
+            <span className="version-pill">v0.5.0</span>
           </div>
         </header>
 
@@ -993,6 +994,8 @@ export default function App() {
         <Metric label="CONSULTA" value={formatDuration(report.durationMs)} detail={report.root === report.indexRoot ? "indexação inicial" : "via índice"} />
         <Metric label="IGNORADOS" value={report.skippedEntries.toLocaleString("pt-BR")} detail="sem acesso" />
       </section>
+
+      <StorageHistory snapshots={snapshots} />
 
       <section className="analysis-grid">
         <article className="surface treemap-surface">
@@ -1419,7 +1422,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.4.1 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
+        <span>v0.5.0 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
@@ -1456,6 +1459,7 @@ export default function App() {
         loadedFromMemory={loadedFromMemory}
         snapshotCount={snapshots.length}
         lastRefresh={lastRefresh}
+        historyDelta={snapshotDelta}
       />
     </main>
   );

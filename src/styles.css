@@ -2630,3 +2630,202 @@ button:focus-visible {
   border-color: color-mix(in srgb, #d89052 38%, var(--line));
   background: color-mix(in srgb, #d89052 8%, transparent);
 }
+
+
+/* v0.5.0 — storage history */
+.storage-history {
+  margin: 0 18px 14px;
+  padding: 14px;
+}
+
+.history-periods {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.history-periods button {
+  min-height: 26px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.history-periods button:hover,
+.history-periods button.active {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.history-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.history-stat {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.history-stat > span {
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.history-stat > strong {
+  font-size: 15px;
+}
+
+.history-stat > strong.growth,
+.growth-row strong.growth {
+  color: #d89052;
+}
+
+.history-stat > strong.shrink,
+.growth-row strong.shrink {
+  color: #62d58a;
+}
+
+.history-stat > small {
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.history-chart {
+  margin-top: 12px;
+  min-height: 230px;
+  padding: 10px 2px 2px;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--surface-raised) 85%, transparent);
+}
+
+.history-chart .recharts-cartesian-axis-tick-value {
+  fill: var(--muted);
+}
+
+.history-tooltip {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 12px 32px color-mix(in srgb, #000 28%, transparent);
+}
+
+.history-tooltip span,
+.history-tooltip small {
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.history-tooltip strong {
+  font-size: 10px;
+}
+
+.history-empty {
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.growth-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.growth-panel {
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.growth-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  color: var(--muted-strong);
+}
+
+.growth-title > svg {
+  color: var(--accent);
+}
+
+.growth-title strong {
+  font-size: 9px;
+}
+
+.growth-row {
+  min-height: 32px;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.growth-row > svg {
+  color: var(--muted);
+}
+
+.growth-row > span {
+  overflow: hidden;
+  color: var(--muted-strong);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.growth-row > strong {
+  font-size: 8px;
+}
+
+.history-missing-breakdown {
+  margin: 8px 0 2px;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  .history-summary-grid,
+  .growth-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .history-periods {
+    width: 100%;
+  }
+
+  .history-periods button {
+    flex: 1;
+  }
+}

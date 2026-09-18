@@ -39,6 +39,7 @@ type Props = {
     updatedFiles: number;
     removedFiles: number;
   } | null;
+  historyDelta?: number | null;
 };
 
 type AssistantState = {
@@ -125,7 +126,8 @@ export function LiviaAssistant({
   lastRestore,
   loadedFromMemory = false,
   snapshotCount = 0,
-  lastRefresh
+  lastRefresh,
+  historyDelta = null
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -250,6 +252,17 @@ export function LiviaAssistant({
           };
     }
 
+    if (report && historyDelta !== null && historyDelta !== 0 && !lastRefresh) {
+      return {
+        mood: historyDelta > 0 ? "suspicious" : "happy",
+        title: historyDelta > 0 ? "Seu disco cresceu" : "Seu disco emagreceu",
+        message: historyDelta > 0
+          ? `Desde o snapshot anterior apareceram ${formatBytes(historyDelta)} a mais. Agora eu consigo mostrar onde esse crescimento aconteceu, em vez de só encarar a barra ficando vermelha.`
+          : `Desde o snapshot anterior você liberou ${formatBytes(Math.abs(historyDelta))}. Um raro momento em que deletar coisas termina com aplausos.`,
+        key: `history-delta:${report.indexRoot}:${historyDelta}`
+      };
+    }
+
     if (report && loadedFromMemory) {
       return {
         mood: "happy",
@@ -295,6 +308,7 @@ export function LiviaAssistant({
     error,
     lastCleanup,
     lastRestore,
+    historyDelta,
     loadedFromMemory,
     lastRefresh,
     progress,

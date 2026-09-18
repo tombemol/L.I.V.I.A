@@ -46,6 +46,10 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
+            - histórico visual do armazenamento com gráfico temporal e filtros de período;
+            - comparação de crescimento/redução por pasta e extensão;
+            - snapshots agora guardam breakdown resumido de pastas e tipos;
+            - Lívia reage ao crescimento ou redução desde o snapshot anterior;
             - atualização incremental NTFS via USN Journal quando o checkpoint continua válido;
             - fallback automático para reconstrução completa quando a atualização incremental não é segura;
             - status da atualização incremental exibido no dashboard e explicado pela Lívia;
