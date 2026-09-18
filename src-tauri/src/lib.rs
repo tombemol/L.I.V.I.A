@@ -51,6 +51,17 @@ struct CachedIndexResponse {
     snapshots: Vec<StorageSnapshot>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RefreshIndexResponse {
+    report: ScanReport,
+    incremental: bool,
+    changed_entries: usize,
+    updated_files: usize,
+    removed_files: usize,
+    fallback_reason: Option<String>,
+}
+
 #[derive(Default)]
 struct ScanState {
     cancel: Arc<AtomicBool>,
@@ -178,6 +189,100 @@ async fn snapshot_history(root: String, limit: usize) -> Result<Vec<StorageSnaps
     tauri::async_runtime::spawn_blocking(move || load_snapshot_history(&root, limit))
         .await
         .map_err(|error| format!("Falha ao carregar snapshots: {error}"))?
+}
+
+
+#[tauri::command]
+async fn refresh_index(
+    app: AppHandle,
+    state: State<'_, ScanState>,
+) -> Result<RefreshIndexResponse, String> {
+    if state.running.swap(true, Ordering::SeqCst) {
+        return Err("Já existe uma análise em andamento.".to_string());
+    }
+
+    state.cancel.store(false, Ordering::SeqCst);
+
+    let current = {
+        let guard = state
+            .index
+            .read()
+            .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+        guard
+            .as_ref()
+            .cloned()
+            .ok_or_else(|| "Não há índice para atualizar.".to_string())?
+    };
+
+    let root = current.root.clone();
+    let cancel = Arc::clone(&state.cancel);
+    let running = Arc::clone(&state.running);
+    let index_state = Arc::clone(&state.index);
+
+    let task = tauri::async_runtime::spawn_blocking(move || {
+        match scanner::refresh_usn(&current) {
+            Ok(bundle) => Ok((
+                bundle.report,
+                bundle.index,
+                true,
+                bundle.changed_entries,
+                bundle.updated_files,
+                bundle.removed_files,
+                None,
+            )),
+            Err(reason) => {
+                let mut bundle = scanner::scan(root, cancel, |progress: ScanProgress| {
+                    let _ = app.emit("scan-progress", progress);
+                })?;
+
+                let fallback_reason = format!(
+                    "USN incremental indisponível ({reason}). O índice completo foi reconstruído."
+                );
+                bundle.report.engine.fallback_reason = Some(fallback_reason.clone());
+                bundle.index.engine.fallback_reason = Some(fallback_reason.clone());
+
+                Ok((
+                    bundle.report,
+                    bundle.index,
+                    false,
+                    0,
+                    0,
+                    0,
+                    Some(fallback_reason),
+                ))
+            }
+        }
+    });
+
+    let result = task.await;
+    running.store(false, Ordering::SeqCst);
+
+    match result {
+        Ok(Ok((report, index, incremental, changed_entries, updated_files, removed_files, fallback_reason))) => {
+            if let Err(error) = save_persisted_index(&index) {
+                eprintln!("L.I.V.I.A.: não foi possível persistir o índice atualizado: {error}");
+            }
+            if let Err(error) = record_snapshot(&report) {
+                eprintln!("L.I.V.I.A.: não foi possível registrar o snapshot atualizado: {error}");
+            }
+
+            let mut guard = index_state
+                .write()
+                .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+            *guard = Some(index);
+
+            Ok(RefreshIndexResponse {
+                report,
+                incremental,
+                changed_entries,
+                updated_files,
+                removed_files,
+                fallback_reason,
+            })
+        }
+        Ok(Err(error)) => Err(format!("A atualização foi interrompida: {error}")),
+        Err(error) => Err(format!("A atualização foi interrompida: {error}")),
+    }
 }
 
 #[tauri::command]
@@ -768,6 +873,7 @@ pub fn run() {
             scan_path,
             load_cached_index,
             snapshot_history,
+            refresh_index,
             browse_index,
             search_index,
             find_duplicates,
