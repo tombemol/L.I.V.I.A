@@ -550,6 +550,7 @@ where
         started.elapsed().as_millis(),
         indexed_files,
         engine.clone(),
+        display_root.clone(),
     );
 
     Ok(ScanBundle {
