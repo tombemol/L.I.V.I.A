@@ -48,6 +48,9 @@ jobs:
             - cálculo do espaço potencialmente recuperável por duplicatas confirmadas;
             - modos Mapa/Pizza para pastas e Lista/Pizza para extensões;
             - preferências de visualização persistentes;
+            - Lívia como guia contextual com os assets chibi oficiais;
+            - expressões Normal, Feliz, Explicando, Julgando, Preocupada e Escaneando;
+            - explicações contextuais para tipos de arquivo e comentários sobre duplicatas/arquivos antigos;
             - interface desktop com temas claro e escuro;
             - análise, hashing e recomendações continuam somente leitura.
 
