@@ -42,6 +42,10 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
+            - índice persistente restaurado automaticamente entre execuções;
+            - snapshots locais do armazenamento e mini timeline no dashboard;
+            - delta de crescimento/redução entre os snapshots mais recentes;
+            - Lívia reconhece quando recuperou um índice da memória local;
             - desfazer seguro durante a sessão para itens identificados de forma inequívoca na Lixeira;
             - histórico de limpeza mais rico, sem persistir caminhos ou identificadores da Lixeira;
             - seleção assistida de cópias em grupos de duplicatas confirmadas;
