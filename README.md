@@ -58,8 +58,8 @@ Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa
 - [x] tentativa automática de enumeração NTFS/MFT ao analisar a raiz de uma unidade;
 - [x] fallback transparente para o scanner compatível quando MFT não puder ser usado;
 - [x] README atualizado;
-- [ ] validar CI Windows;
-- [ ] validar instalador;
+- [x] validar CI Windows;
+- [x] validar instalador;
 - [ ] publicar v0.2.1.
 
 ### MFT e privilégios
