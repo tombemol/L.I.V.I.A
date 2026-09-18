@@ -57,7 +57,7 @@ A sprint atual adiciona uma camada de exploração sobre o scanner:
 - [x] breadcrumb para voltar pela hierarquia;
 - [x] triagem de possíveis duplicatas por tamanho;
 - [x] README atualizado;
-- [ ] validar CI e instalador;
+- [x] validar CI e instalador;
 - [ ] publicar v0.2.0.
 
 > **Importante:** a triagem de duplicatas ainda não compara conteúdo. Dois arquivos do mesmo tamanho são apenas candidatos. Hash entra antes de qualquer ação de limpeza.
