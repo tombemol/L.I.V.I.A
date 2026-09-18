@@ -27,6 +27,34 @@ export type DuplicateCandidate = {
   files: FileEntry[];
 };
 
+export type DuplicateProgress = {
+  phase: "partial" | "full" | "done";
+  candidateFiles: number;
+  partialHashedFiles: number;
+  fullyHashedFiles: number;
+  skippedFiles: number;
+  currentPath: string;
+  elapsedMs: number;
+};
+
+export type DuplicateGroup = {
+  size: number;
+  count: number;
+  reclaimableBytes: number;
+  hash: string;
+  files: FileEntry[];
+};
+
+export type DuplicateReport = {
+  groups: DuplicateGroup[];
+  candidateFiles: number;
+  partialHashedFiles: number;
+  fullyHashedFiles: number;
+  skippedFiles: number;
+  reclaimableBytes: number;
+  durationMs: number;
+};
+
 export type Recommendation = {
   path: string;
   name: string;

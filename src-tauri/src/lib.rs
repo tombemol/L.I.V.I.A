@@ -1,6 +1,6 @@
 mod scanner;
 
-use scanner::{ScanIndex, ScanProgress, ScanReport, SearchResponse};
+use scanner::{DuplicateProgress, DuplicateReport, ScanIndex, ScanProgress, ScanReport, SearchResponse};
 use std::{
     path::PathBuf,
     sync::{
@@ -110,6 +110,30 @@ async fn search_index(
 }
 
 #[tauri::command]
+async fn find_duplicates(
+    app: AppHandle,
+    state: State<'_, ScanState>,
+    scope: String,
+) -> Result<DuplicateReport, String> {
+    let index_state = Arc::clone(&state.index);
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let guard = index_state
+            .read()
+            .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+        let index = guard
+            .as_ref()
+            .ok_or_else(|| "Faça uma análise antes de verificar duplicatas.".to_string())?;
+
+        scanner::find_duplicates(index, scope, |progress: DuplicateProgress| {
+            let _ = app.emit("duplicate-progress", progress);
+        })
+    })
+    .await
+    .map_err(|error| format!("Falha ao verificar duplicatas: {error}"))?
+}
+
+#[tauri::command]
 fn cancel_scan(state: State<'_, ScanState>) {
     state.cancel.store(true, Ordering::SeqCst);
 }
@@ -164,6 +188,7 @@ pub fn run() {
             scan_path,
             browse_index,
             search_index,
+            find_duplicates,
             cancel_scan,
             system_drive,
             open_in_explorer

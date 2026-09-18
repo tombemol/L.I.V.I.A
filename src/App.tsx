@@ -12,6 +12,7 @@ import {
   FileArchive,
   Files,
   Filter,
+  Fingerprint,
   FolderOpen,
   Gauge,
   HardDrive,
@@ -27,7 +28,14 @@ import {
 import { StorageTreemap } from "./components/StorageTreemap";
 import { ExtensionList } from "./components/ExtensionList";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
-import type { FileEntry, ScanProgress, ScanReport, SearchResponse } from "./types";
+import type {
+  DuplicateProgress,
+  DuplicateReport,
+  FileEntry,
+  ScanProgress,
+  ScanReport,
+  SearchResponse
+} from "./types";
 
 function LogoGlyph() {
   return (
@@ -146,6 +154,9 @@ export default function App() {
     files: []
   });
   const [searching, setSearching] = useState(false);
+  const [duplicateBusy, setDuplicateBusy] = useState(false);
+  const [duplicateProgress, setDuplicateProgress] = useState<DuplicateProgress | null>(null);
+  const [duplicateReport, setDuplicateReport] = useState<DuplicateReport | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem("livia-theme");
     if (saved === "light" || saved === "dark") return saved;
@@ -170,6 +181,23 @@ export default function App() {
 
     listen<ScanProgress>("scan-progress", ({ payload }) => {
       if (active) setProgress(payload);
+    }).then((unlisten) => {
+      if (active) dispose = unlisten;
+      else unlisten();
+    });
+
+    return () => {
+      active = false;
+      dispose?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    let dispose: (() => void) | undefined;
+
+    listen<DuplicateProgress>("duplicate-progress", ({ payload }) => {
+      if (active) setDuplicateProgress(payload);
     }).then((unlisten) => {
       if (active) dispose = unlisten;
       else unlisten();
@@ -258,6 +286,9 @@ export default function App() {
     setExtensionFilter("all");
     setMinSize(0);
     setSearchResult({ total: 0, durationMs: 0, files: [] });
+    setDuplicateBusy(false);
+    setDuplicateProgress(null);
+    setDuplicateReport(null);
     setProgress({
       root: path,
       filesScanned: 0,
@@ -289,6 +320,8 @@ export default function App() {
 
     setBrowsing(true);
     setSelectedFile(null);
+    setDuplicateProgress(null);
+    setDuplicateReport(null);
     setError(null);
 
     try {
@@ -318,6 +351,28 @@ export default function App() {
     }
   }
 
+  async function verifyDuplicates() {
+    if (!report || duplicateBusy) return;
+
+    setDuplicateBusy(true);
+    setDuplicateReport(null);
+    setDuplicateProgress(null);
+    setError(null);
+
+    try {
+      const result = await invoke<DuplicateReport>("find_duplicates", { scope: report.root });
+      setDuplicateReport(result);
+    } catch (reason) {
+      setError(
+        typeof reason === "string"
+          ? reason
+          : "Não foi possível confirmar os arquivos duplicados."
+      );
+    } finally {
+      setDuplicateBusy(false);
+    }
+  }
+
   if (busy) {
     return (
       <main className="utility-shell">
@@ -325,7 +380,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.2.1</span>
+            <span className="version-pill">v0.2.2</span>
           </div>
         </header>
 
@@ -378,7 +433,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.2.1</span>
+            <span className="version-pill">v0.2.2</span>
           </div>
         </header>
 
@@ -637,36 +692,136 @@ export default function App() {
         </div>
       </section>
 
-      {report.duplicateCandidates.length ? (
-        <section className="surface duplicates-section">
-          <div className="section-heading">
-            <div>
-              <span className="section-kicker">DUPLICATAS · TRIAGEM</span>
-              <h2>Arquivos destacados de mesmo tamanho</h2>
-            </div>
-            <Files size={19} />
+      <section className="surface duplicates-section">
+        <div className="section-heading duplicate-heading">
+          <div>
+            <span className="section-kicker">DUPLICATAS · BLAKE3</span>
+            <h2>Confirmação por conteúdo</h2>
           </div>
+          <button
+            className="secondary-action compact"
+            type="button"
+            onClick={verifyDuplicates}
+            disabled={duplicateBusy}
+          >
+            <Fingerprint size={15} />
+            {duplicateBusy ? "Verificando…" : duplicateReport ? "Verificar novamente" : "Confirmar por hash"}
+          </button>
+        </div>
 
-          <div className="duplicate-list">
-            {report.duplicateCandidates.slice(0, 6).map((group) => (
-              <div className="duplicate-group" key={`${group.size}-${group.files[0]?.path ?? ""}`}>
-                <div className="duplicate-summary">
-                  <strong>{formatBytes(group.size)}</strong>
-                  <span>{group.count} arquivos · até {formatBytes(group.potentialSavings)} potencialmente repetidos</span>
-                </div>
-                <div className="duplicate-files">
-                  {group.files.slice(0, 3).map((file) => (
-                    <button type="button" key={file.path} onClick={() => setSelectedFile(file)} title={file.path}>
-                      {file.name}
-                    </button>
-                  ))}
+        {duplicateBusy ? (
+          <div className="duplicate-progress-card">
+            <div className="duplicate-progress-copy">
+              <Fingerprint size={18} />
+              <div>
+                <strong>
+                  {duplicateProgress?.phase === "full"
+                    ? "Confirmando arquivos completos"
+                    : "Filtrando candidatos por amostras"}
+                </strong>
+                <span title={duplicateProgress?.currentPath}>
+                  {shortPath(duplicateProgress?.currentPath ?? report.root, 86)}
+                </span>
+              </div>
+            </div>
+            <div className="duplicate-progress-stats">
+              <span><strong>{(duplicateProgress?.candidateFiles ?? 0).toLocaleString("pt-BR")}</strong> candidatos</span>
+              <span><strong>{(duplicateProgress?.partialHashedFiles ?? 0).toLocaleString("pt-BR")}</strong> amostras</span>
+              <span><strong>{(duplicateProgress?.fullyHashedFiles ?? 0).toLocaleString("pt-BR")}</strong> completos</span>
+              <span><strong>{formatDuration(duplicateProgress?.elapsedMs ?? 0)}</strong> decorridos</span>
+            </div>
+          </div>
+        ) : duplicateReport ? (
+          <>
+            <div className="duplicate-result-summary">
+              <div>
+                <span className="metric-label">DUPLICATAS CONFIRMADAS</span>
+                <strong>{duplicateReport.groups.length.toLocaleString("pt-BR")} grupos</strong>
+              </div>
+              <div>
+                <span className="metric-label">ESPAÇO RECUPERÁVEL</span>
+                <strong>{formatBytes(duplicateReport.reclaimableBytes)}</strong>
+              </div>
+              <div>
+                <span className="metric-label">HASH COMPLETO</span>
+                <strong>{duplicateReport.fullyHashedFiles.toLocaleString("pt-BR")}</strong>
+              </div>
+              <div>
+                <span className="metric-label">TEMPO</span>
+                <strong>{formatDuration(duplicateReport.durationMs)}</strong>
+              </div>
+            </div>
+
+            {duplicateReport.groups.length ? (
+              <div className="duplicate-list verified">
+                {duplicateReport.groups.slice(0, 12).map((group) => (
+                  <div className="duplicate-group" key={group.hash}>
+                    <div className="duplicate-summary">
+                      <strong>{formatBytes(group.reclaimableBytes)} recuperáveis</strong>
+                      <span>{group.count} arquivos idênticos · {formatBytes(group.size)} cada</span>
+                      <code title={group.hash}>{group.hash.slice(0, 18)}…</code>
+                    </div>
+                    <div className="duplicate-files">
+                      {group.files.slice(0, 6).map((file) => (
+                        <button
+                          type="button"
+                          key={file.path}
+                          onClick={() => setSelectedFile(file)}
+                          onDoubleClick={() => openInExplorer(file.path)}
+                          title={file.path}
+                        >
+                          {file.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="calm-empty duplicate-empty">
+                <ShieldCheck size={19} />
+                <div>
+                  <strong>Nenhuma duplicata confirmada.</strong>
+                  <span>Arquivos de mesmo tamanho foram comparados por conteúdo e não formaram grupos idênticos.</span>
                 </div>
               </div>
-            ))}
+            )}
+
+            <p className="section-note">
+              Verificação em duas etapas: BLAKE3 parcial para reduzir leituras e hash completo para confirmar igualdade. {duplicateReport.skippedFiles} arquivos mudaram ou não puderam ser lidos e foram ignorados.
+            </p>
+          </>
+        ) : report.duplicateCandidates.length ? (
+          <>
+            <div className="duplicate-list">
+              {report.duplicateCandidates.slice(0, 6).map((group) => (
+                <div className="duplicate-group" key={`${group.size}-${group.files[0]?.path ?? ""}`}>
+                  <div className="duplicate-summary">
+                    <strong>{formatBytes(group.size)}</strong>
+                    <span>{group.count} arquivos · até {formatBytes(group.potentialSavings)} potencialmente repetidos</span>
+                  </div>
+                  <div className="duplicate-files">
+                    {group.files.slice(0, 3).map((file) => (
+                      <button type="button" key={file.path} onClick={() => setSelectedFile(file)} title={file.path}>
+                        {file.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="section-note">A triagem rápida usa tamanho. Clique em “Confirmar por hash” para comparar conteúdo no índice inteiro deste caminho.</p>
+          </>
+        ) : (
+          <div className="calm-empty duplicate-empty">
+            <Files size={19} />
+            <div>
+              <strong>Nenhum candidato óbvio na triagem rápida.</strong>
+              <span>A verificação completa ainda pode procurar grupos de mesmo tamanho em todo o índice.</span>
+            </div>
           </div>
-          <p className="section-note">Ainda é triagem por tamanho entre os arquivos destacados. Confirmação por hash entra na próxima sprint.</p>
-        </section>
-      ) : null}
+        )}
+      </section>
 
       <section className="surface recommendations">
         <div className="section-heading">
@@ -712,7 +867,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.2.1 · índice de sessão · somente leitura.</span>
+        <span>v0.2.2 · índice de sessão · somente leitura.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}

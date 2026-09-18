@@ -1,6 +1,6 @@
 [package]
 name = "livia"
-version = "0.2.1"
+version = "0.2.2"
 description = "Leitura Inteligente e Visualização de Informações de Armazenamento"
 authors = ["Antonio Silva"]
 edition = "2021"
@@ -20,6 +20,7 @@ serde_json = "1"
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 walkdir = "2"
+blake3 = "1"
 
 [target.'cfg(windows)'.dependencies]
 usn-journal-rs = "0.4.1"
