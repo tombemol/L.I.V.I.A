@@ -2829,3 +2829,127 @@ button:focus-visible {
     flex: 1;
   }
 }
+
+
+/* v0.5.1 — recommendation evidence */
+.recommendation-row {
+  min-height: 104px;
+  grid-template-columns: 30px minmax(190px, 1.1fr) minmax(300px, 1.8fr) 130px;
+}
+
+.recommendation-labels,
+.recommendation-evidence {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.recommendation-labels > span,
+.recommendation-labels > small,
+.recommendation-evidence > span {
+  width: max-content;
+  padding: 2px 5px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-raised);
+  font-size: 7px;
+  line-height: 1.3;
+}
+
+.recommendation-labels > span {
+  color: var(--muted-strong);
+  font-weight: 750;
+}
+
+.recommendation-labels .risk-low {
+  color: #62d58a;
+  border-color: color-mix(in srgb, #62d58a 30%, var(--line));
+}
+
+.recommendation-labels .risk-review {
+  color: #d89052;
+  border-color: color-mix(in srgb, #d89052 35%, var(--line));
+}
+
+.recommendation-copy,
+.recommendation-safety {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.45;
+}
+
+.recommendation-safety {
+  color: var(--muted) !important;
+  font-size: 7px !important;
+}
+
+.recommendation-evidence {
+  margin-top: 2px;
+}
+
+.confidence-block {
+  width: 100%;
+  display: grid;
+  gap: 3px;
+}
+
+.confidence-block > small {
+  color: var(--muted);
+  font-size: 7px;
+  text-align: right;
+}
+
+.confidence-track {
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--track);
+}
+
+.confidence-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+@media (max-width: 920px) {
+  .recommendation-row {
+    grid-template-columns: 28px minmax(0, 1fr) 120px;
+    align-items: start;
+    padding: 10px 0;
+  }
+
+  .recommendation-reason {
+    grid-column: 2;
+  }
+
+  .recommendation-meta {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .recommendation-row {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .recommendation-meta {
+    grid-column: 2;
+    grid-row: auto;
+    justify-items: start;
+  }
+
+  .confidence-block {
+    max-width: 180px;
+  }
+
+  .confidence-block > small {
+    text-align: left;
+  }
+}
