@@ -82,6 +82,7 @@ pub struct ScanEngine {
 #[serde(rename_all = "camelCase")]
 pub struct ScanReport {
     pub root: String,
+    pub index_root: String,
     pub total_size: u64,
     pub file_count: u64,
     pub folder_count: u64,
@@ -214,6 +215,7 @@ impl ReportAccumulator {
         duration_ms: u128,
         indexed_files: usize,
         engine: ScanEngine,
+        index_root: String,
     ) -> ScanReport {
         let mut largest_files: Vec<_> = self
             .largest
@@ -259,6 +261,7 @@ impl ReportAccumulator {
 
         ScanReport {
             root: self.root.to_string_lossy().to_string(),
+            index_root,
             total_size: self.total_size,
             file_count: self.file_count,
             folder_count,
@@ -416,6 +419,7 @@ where
         started.elapsed().as_millis(),
         indexed_files,
         engine.clone(),
+        display_root.clone(),
     );
 
     Ok(ScanBundle {
@@ -599,6 +603,7 @@ pub fn browse_index(index: &ScanIndex, path: String) -> Result<ScanReport, Strin
         started.elapsed().as_millis(),
         index.files.len(),
         index.engine.clone(),
+        index.root.clone(),
     ))
 }
 
