@@ -156,56 +156,41 @@ button:focus-visible {
 }
 
 .logo-glyph {
-  position: relative;
   width: 34px;
   height: 34px;
   flex: 0 0 auto;
-  border: 1px solid var(--logo-line);
-  border-radius: 8px;
-  background: var(--logo-bg);
 }
 
-.logo-l-v,
-.logo-l-h,
-.logo-cell {
-  position: absolute;
+.logo-glyph svg {
   display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.logo-l-v {
-  left: 9px;
-  top: 7px;
-  width: 5px;
-  height: 18px;
-  border-radius: 3px;
-  background: #e1f5f8;
+.logo-frame {
+  fill: var(--logo-bg);
+  stroke: var(--logo-line);
+  stroke-width: 1.2;
 }
 
-.logo-l-h {
-  left: 9px;
-  bottom: 8px;
-  width: 15px;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--accent);
+.logo-l {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.logo-cell-a {
-  left: 18px;
-  top: 7px;
-  width: 8px;
-  height: 6px;
-  border-radius: 2px;
-  background: #3c96a9;
+.logo-bar {
+  fill: var(--accent);
 }
 
-.logo-cell-b,
-.logo-cell-c {
-  top: 16px;
-  width: 4px;
-  height: 4px;
-  border-radius: 1px;
-  background: #315764;
+.logo-chip {
+  fill: var(--accent-deep);
+}
+
+.logo-chip-dim {
+  opacity: 0.55;
 }
 
 .logo-cell-b {

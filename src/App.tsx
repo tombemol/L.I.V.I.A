@@ -24,11 +24,13 @@ import type { ScanProgress, ScanReport } from "./types";
 function LogoGlyph() {
   return (
     <div className="logo-glyph" aria-hidden="true">
-      <span className="logo-l-v" />
-      <span className="logo-l-h" />
-      <span className="logo-cell logo-cell-a" />
-      <span className="logo-cell logo-cell-b" />
-      <span className="logo-cell logo-cell-c" />
+      <svg viewBox="0 0 32 32" role="presentation">
+        <rect className="logo-frame" x="1.5" y="1.5" width="29" height="29" rx="7" />
+        <path className="logo-l" d="M9 8.5v14.75c0 1.1.9 2 2 2h11.5" />
+        <rect className="logo-bar" x="16.5" y="9" width="7.5" height="5" rx="1.5" />
+        <rect className="logo-chip" x="16.5" y="17" width="3.4" height="3.4" rx="1" />
+        <rect className="logo-chip logo-chip-dim" x="21" y="17" width="3.4" height="3.4" rx="1" />
+      </svg>
     </div>
   );
 }

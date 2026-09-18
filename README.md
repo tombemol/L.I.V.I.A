@@ -85,7 +85,7 @@ Esta etapa está em desenvolvimento e responde diretamente ao teste real da v0.1
 - [x] trocar a paleta por uma identidade menos genérica;
 - [x] redesenhar o tooltip do treemap;
 - [x] atualizar o README com diagramas Mermaid e leitura visual melhor;
-- [ ] finalizar novo ícone;
+- [x] finalizar novo ícone multirresolução;
 - [ ] revisão visual final seguindo o Impeccable;
 - [ ] validar instalador no CI;
 - [ ] publicar v0.1.2.
