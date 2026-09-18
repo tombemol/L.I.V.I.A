@@ -103,7 +103,7 @@ L.I.V.I.A.
 
 **v0.1.0 — Foundation**
 
-A primeira versão funcional já possui scanner local em Rust, visualização de armazenamento e recomendações somente leitura. O build Windows é validado no GitHub Actions antes de cada merge.
+A primeira versão funcional já possui scanner local em Rust, visualização de armazenamento e recomendações somente leitura. O CI valida frontend e Rust, gera instaladores Windows como artefatos e a publicação em `main` cria a pré-release correspondente no GitHub.
 
 ## Design
 

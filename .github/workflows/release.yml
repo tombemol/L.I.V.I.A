@@ -1,15 +1,15 @@
 name: Release Windows
 
 on:
-  workflow_dispatch:
   push:
-    tags:
-      - "v*"
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   release:
-    permissions:
-      contents: write
     runs-on: windows-latest
 
     steps:
@@ -19,7 +19,7 @@ jobs:
       - name: Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Rust
         uses: dtolnay/rust-toolchain@stable
@@ -32,13 +32,22 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
-      - name: Build and publish
+      - name: Build and publish Windows release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
           releaseName: "L.I.V.I.A. v__VERSION__"
-          releaseBody: "Build automático da L.I.V.I.A. para Windows."
-          releaseDraft: true
+          releaseBody: |
+            Primeira versão funcional da L.I.V.I.A.
+
+            - análise local de pasta ou unidade;
+            - scanner em Rust;
+            - treemap e distribuição por extensão;
+            - maiores arquivos;
+            - recomendações conservadoras;
+            - nenhum arquivo é excluído nesta versão.
+          releaseDraft: false
           prerelease: true
+          args: --bundles nsis,msi
