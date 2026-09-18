@@ -42,6 +42,7 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
+            - corrige a sprite sheet da Lívia que podia aparecer vazia no app e no README;
             - índice de sessão e busca global sem revarrer o disco;
             - navegação instantânea pelo índice e aceleração NTFS/MFT quando disponível;
             - confirmação de duplicatas em duas etapas com BLAKE3;
