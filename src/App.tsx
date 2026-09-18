@@ -43,6 +43,7 @@ import type {
   DuplicateProgress,
   DuplicateReport,
   FileEntry,
+  RefreshIndexResponse,
   ScanProgress,
   ScanReport,
   SearchResponse,
@@ -228,6 +229,7 @@ export default function App() {
   const [snapshots, setSnapshots] = useState<StorageSnapshot[]>([]);
   const [indexSavedAt, setIndexSavedAt] = useState<number | null>(null);
   const [loadedFromMemory, setLoadedFromMemory] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<RefreshIndexResponse | null>(null);
   const [cleanupHistory, setCleanupHistory] = useState<CleanupHistoryEntry[]>(() => {
     try {
       const saved = localStorage.getItem("livia-cleanup-history");
@@ -465,6 +467,7 @@ export default function App() {
     setCleanupSelection({});
     setLastCleanup(null);
     setLastRestore(null);
+    setLastRefresh(null);
     setLoadedFromMemory(false);
     setProgress({
       root: path,
@@ -493,6 +496,58 @@ export default function App() {
       const message =
         typeof reason === "string" ? reason : "Não foi possível analisar este caminho.";
 
+      if (!message.toLocaleLowerCase("pt-BR").includes("cancelada")) {
+        setError(message);
+      }
+    } finally {
+      setBusy(false);
+      setCancelRequested(false);
+    }
+  }
+
+
+  async function refreshIndex() {
+    if (!report || busy) return;
+
+    setBusy(true);
+    setCancelRequested(false);
+    setError(null);
+    setSelectedFile(null);
+    setDuplicateBusy(false);
+    setDuplicateProgress(null);
+    setDuplicateReport(null);
+    setCleanupSelection({});
+    setLastCleanup(null);
+    setLastRestore(null);
+    setLoadedFromMemory(false);
+    setProgress({
+      root: report.indexRoot,
+      filesScanned: 0,
+      foldersScanned: 0,
+      skippedEntries: 0,
+      bytesScanned: 0,
+      elapsedMs: 0,
+      currentPath: "Consultando USN Journal…"
+    });
+
+    try {
+      const result = await invoke<RefreshIndexResponse>("refresh_index");
+      setReport(result.report);
+      setLastRefresh(result);
+      setIndexSavedAt(Math.floor(Date.now() / 1000));
+
+      try {
+        const history = await invoke<StorageSnapshot[]>("snapshot_history", {
+          root: result.report.indexRoot,
+          limit: 12
+        });
+        setSnapshots(history);
+      } catch {
+        setSnapshots([]);
+      }
+    } catch (reason) {
+      const message =
+        typeof reason === "string" ? reason : "Não foi possível atualizar o índice.";
       if (!message.toLocaleLowerCase("pt-BR").includes("cancelada")) {
         setError(message);
       }
@@ -720,7 +775,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.4.0</span>
+            <span className="version-pill">v0.4.1</span>
           </div>
         </header>
 
@@ -774,7 +829,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.4.0</span>
+            <span className="version-pill">v0.4.1</span>
           </div>
         </header>
 
@@ -829,8 +884,8 @@ export default function App() {
         <Brand detail={shortPath(report.root, 54)} />
         <div className="topbar-actions">
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
-          <button className="secondary-action" type="button" onClick={() => scan(report.indexRoot)}>
-            <RefreshCw size={15} /> Reindexar
+          <button className="secondary-action" type="button" onClick={refreshIndex}>
+            <RefreshCw size={15} /> Atualizar índice
           </button>
           <button className="primary-action compact" type="button" onClick={chooseAndScan}>
             <FolderOpen size={15} /> Novo local
@@ -909,6 +964,13 @@ export default function App() {
             <strong className={snapshotDelta > 0 ? "growth" : snapshotDelta < 0 ? "shrink" : ""}>
               {formatSignedBytes(snapshotDelta)} desde o anterior
             </strong>
+          ) : null}
+          {lastRefresh ? (
+            <span className={`refresh-badge${lastRefresh.incremental ? " incremental" : " full"}`}>
+              {lastRefresh.incremental
+                ? `USN · ${lastRefresh.updatedFiles} atualizado(s) · ${lastRefresh.removedFiles} removido(s)`
+                : "fallback · índice completo reconstruído"}
+            </span>
           ) : null}
         </div>
 
@@ -1357,7 +1419,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.4.0 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
+        <span>v0.4.1 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
@@ -1393,6 +1455,7 @@ export default function App() {
         lastRestore={lastRestore}
         loadedFromMemory={loadedFromMemory}
         snapshotCount={snapshots.length}
+        lastRefresh={lastRefresh}
       />
     </main>
   );

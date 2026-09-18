@@ -2604,3 +2604,29 @@ button:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+/* v0.4.1 — USN incremental */
+.refresh-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 7px !important;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.refresh-badge.incremental {
+  color: #62d58a;
+  border-color: color-mix(in srgb, #62d58a 32%, var(--line));
+  background: color-mix(in srgb, #62d58a 7%, transparent);
+}
+
+.refresh-badge.full {
+  color: #d89052;
+  border-color: color-mix(in srgb, #d89052 38%, var(--line));
+  background: color-mix(in srgb, #d89052 8%, transparent);
+}

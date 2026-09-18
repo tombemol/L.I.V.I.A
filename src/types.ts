@@ -157,3 +157,13 @@ export type CachedIndexResponse = {
   savedAtSecs: number;
   snapshots: StorageSnapshot[];
 };
+
+
+export type RefreshIndexResponse = {
+  report: ScanReport;
+  incremental: boolean;
+  changedEntries: number;
+  updatedFiles: number;
+  removedFiles: number;
+  fallbackReason: string | null;
+};

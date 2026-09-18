@@ -33,6 +33,12 @@ type Props = {
   lastRestore?: { files: number; bytes: number } | null;
   loadedFromMemory?: boolean;
   snapshotCount?: number;
+  lastRefresh?: {
+    incremental: boolean;
+    changedEntries: number;
+    updatedFiles: number;
+    removedFiles: number;
+  } | null;
 };
 
 type AssistantState = {
@@ -118,7 +124,8 @@ export function LiviaAssistant({
   lastCleanup,
   lastRestore,
   loadedFromMemory = false,
-  snapshotCount = 0
+  snapshotCount = 0,
+  lastRefresh
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -225,6 +232,24 @@ export function LiviaAssistant({
       };
     }
 
+    if (report && lastRefresh) {
+      return lastRefresh.incremental
+        ? {
+            mood: lastRefresh.changedEntries ? "happy" : "normal",
+            title: lastRefresh.changedEntries ? "Atualizei só o que mudou" : "Nada mudou",
+            message: lastRefresh.changedEntries
+              ? `O USN Journal apontou ${lastRefresh.changedEntries.toLocaleString("pt-BR")} evento(s). Atualizei ${lastRefresh.updatedFiles.toLocaleString("pt-BR")} arquivo(s) e removi ${lastRefresh.removedFiles.toLocaleString("pt-BR")} do índice sem passear pelo disco inteiro.`
+              : "O USN Journal não encontrou mudanças desde o último checkpoint. Pela primeira vez, não fazer nada é literalmente a otimização.",
+            key: `refresh:${report.indexRoot}:${lastRefresh.changedEntries}`
+          }
+        : {
+            mood: "explaining",
+            title: "Reconstruí o índice",
+            message: "A atualização incremental não era segura nesta execução, então usei a varredura completa automaticamente. Velocidade é ótima; índice errado é só velocidade rumo ao problema.",
+            key: `refresh-fallback:${report.indexRoot}`
+          };
+    }
+
     if (report && loadedFromMemory) {
       return {
         mood: "happy",
@@ -271,6 +296,7 @@ export function LiviaAssistant({
     lastCleanup,
     lastRestore,
     loadedFromMemory,
+    lastRefresh,
     progress,
     restoreBusy,
     snapshotCount,
