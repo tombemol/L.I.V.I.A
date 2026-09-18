@@ -28,7 +28,9 @@ type Props = {
   duplicateReport?: DuplicateReport | null;
   cleanupCount?: number;
   cleanupBusy?: boolean;
+  restoreBusy?: boolean;
   lastCleanup?: { files: number; bytes: number } | null;
+  lastRestore?: { files: number; bytes: number } | null;
 };
 
 type AssistantState = {
@@ -110,7 +112,9 @@ export function LiviaAssistant({
   duplicateReport,
   cleanupCount = 0,
   cleanupBusy = false,
-  lastCleanup
+  restoreBusy = false,
+  lastCleanup,
+  lastRestore
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -145,12 +149,30 @@ export function LiviaAssistant({
       };
     }
 
+    if (restoreBusy) {
+      return {
+        mood: "scanning",
+        title: "Trazendo de volta",
+        message: "Estou pedindo à Lixeira exatamente os itens que eu mesma registrei nesta sessão. Nada de restaurar arquivo no chute, porque isso seria uma ideia excelente para um programa ruim.",
+        key: "restore-busy"
+      };
+    }
+
     if (duplicateBusy) {
       return {
         mood: "scanning",
         title: "Comparando conteúdo",
         message: "Agora é BLAKE3. Mesmo tamanho não basta, porque dois arquivos podem coincidir no peso sem serem gêmeos. Humanos também.",
         key: "duplicate-busy"
+      };
+    }
+
+    if (lastRestore?.files) {
+      return {
+        mood: "celebrating",
+        title: "Voltou para casa",
+        message: `${lastRestore.files.toLocaleString("pt-BR")} arquivo(s) restaurado(s), somando ${formatBytes(lastRestore.bytes)}. Desfazer funcionando. A humanidade sobrevive a mais um botão de limpeza.`,
+        key: `restore-done:${lastRestore.files}:${lastRestore.bytes}`
       };
     }
 
@@ -185,7 +207,7 @@ export function LiviaAssistant({
       return {
         mood: "judging",
         title: "Tem repetição por aqui",
-        message: `Confirmei ${duplicateReport.groups.length.toLocaleString("pt-BR")} grupos idênticos. Isso representa ${formatBytes(duplicateReport.reclaimableBytes)} potencialmente recuperáveis. Backup é ótimo. Clonagem sem propósito é outra conversa.`,
+        message: `Confirmei ${duplicateReport.groups.length.toLocaleString("pt-BR")} grupos idênticos. Isso representa ${formatBytes(duplicateReport.reclaimableBytes)} potencialmente recuperáveis. Agora você pode separar as cópias em lote mantendo a primeira da lista, mas ainda precisa revisar antes de mandar qualquer coisa para a Lixeira.`,
         key: `dupes:${duplicateReport.groups.length}:${duplicateReport.reclaimableBytes}`
       };
     }
@@ -234,7 +256,9 @@ export function LiviaAssistant({
     duplicateReport,
     error,
     lastCleanup,
+    lastRestore,
     progress,
+    restoreBusy,
     report,
     selectedFile
   ]);
