@@ -6,13 +6,13 @@
 
 ### Leitura Inteligente e Visualização de Informações de Armazenamento
 
-**Entenda o que ocupa seu disco, navegue pelos gargalos e decida com contexto.**
+**Entenda o que ocupa seu disco, pesquise o índice inteiro e navegue sem ficar reescaneando a mesma árvore.**
 
 ![Windows](https://img.shields.io/badge/Windows-desktop-5969e8?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.2.0-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.2.1--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -22,7 +22,7 @@
 
 A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows. Ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão.
 
-A v0.2 transforma o resultado de uma análise em algo navegável. Porque descobrir que `Program Files` pesa muito e depois ficar olhando para um retângulo colorido seria uma experiência humana extremamente previsível.
+Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa a construir um **índice de sessão**. Busca, filtros e drill-down trabalham nesse índice em vez de obrigar o disco a reviver a mesma caminhada toda vez que o usuário clica numa pasta. Um conceito revolucionário conhecido como “não fazer trabalho duas vezes”.
 
 ## Estado atual
 
@@ -31,80 +31,107 @@ A v0.2 transforma o resultado de uma análise em algo navegável. Porque descobr
 | Scanner Rust responsivo | ✅ |
 | Progresso e cancelamento | ✅ |
 | Tema claro e escuro | ✅ |
-| Treemap interativo | ✅ v0.2 |
-| Breadcrumb / drill-down | ✅ v0.2 |
-| Filtros por nome, extensão e tamanho | ✅ v0.2 |
-| Tabela ordenável | ✅ v0.2 |
-| Painel de detalhes | ✅ v0.2 |
-| Abrir arquivo no Explorer | ✅ v0.2 |
-| Triagem inicial de duplicatas por tamanho | ✅ v0.2 |
+| Treemap interativo | ✅ |
+| Breadcrumb / drill-down | ✅ |
+| Índice completo da sessão | ✅ v0.2.1 |
+| Busca global no índice | ✅ v0.2.1 |
+| Navegação sem nova varredura | ✅ v0.2.1 |
+| MFT automático em raiz NTFS | ✅ experimental |
+| Fallback seguro sem MFT | ✅ |
+| Abrir arquivo no Explorer | ✅ |
+| Triagem inicial de duplicatas | ✅ |
 | Hash de duplicatas | 🗓️ Próxima etapa |
-| Scanner NTFS/MFT | 🗓️ Próxima etapa |
 | Android | 🗓️ Futuro |
 
-## v0.2.0 — Explorer
+## v0.2.1 — Index & Search
 
-A sprint atual adiciona uma camada de exploração sobre o scanner:
+### Entregas
 
-- [x] manter os 500 maiores arquivos em memória sem indexar o disco inteiro;
-- [x] filtrar arquivos destacados por nome/caminho;
-- [x] filtrar por extensão;
-- [x] filtrar por tamanho mínimo;
-- [x] ordenar por nome, tipo, idade e tamanho;
-- [x] painel de detalhes;
-- [x] abrir arquivo/local diretamente no Explorer;
-- [x] treemap clicável para entrar em uma pasta;
-- [x] breadcrumb para voltar pela hierarquia;
-- [x] triagem de possíveis duplicatas por tamanho;
+- [x] indexar todos os arquivos encontrados durante a análise;
+- [x] manter o índice somente na sessão;
+- [x] pesquisa global por nome ou caminho;
+- [x] filtros por extensão e tamanho sobre o índice completo;
+- [x] ordenação no backend;
+- [x] drill-down pelo treemap sem nova leitura física;
+- [x] breadcrumb usando o mesmo índice;
+- [x] painel informa quantos arquivos estão indexados;
+- [x] tentativa automática de enumeração NTFS/MFT ao analisar a raiz de uma unidade;
+- [x] fallback transparente para o scanner compatível quando MFT não puder ser usado;
 - [x] README atualizado;
-- [x] validar CI e instalador;
-- [x] pronta para publicação automática após merge.
+- [ ] validar CI Windows;
+- [ ] validar instalador;
+- [ ] publicar v0.2.1.
 
-> **Importante:** a triagem de duplicatas ainda não compara conteúdo. Dois arquivos do mesmo tamanho são apenas candidatos. Hash entra antes de qualquer ação de limpeza.
+### MFT e privilégios
+
+O caminho acelerado usa enumeração da **Master File Table** quando a análise parte da raiz de uma unidade NTFS e o processo possui privilégios suficientes.
+
+O acesso direto à MFT no Windows requer elevação. A L.I.V.I.A. **não se autoeleva** e não força UAC. Se o acesso não estiver disponível, a análise continua com o scanner convencional e informa o fallback na interface.
+
+Isso é intencional: pedir permissão administrativa automaticamente só para parecer rápido seria uma maneira impressionante de piorar ainda mais a primeira impressão de um aplicativo que já precisa lidar com SmartScreen.
 
 ## Arquitetura
 
 ```mermaid
 flowchart LR
     U[Usuário] --> UI[React + TypeScript]
-    UI -->|invoke| T[Tauri 2]
-    T --> R[Core Rust]
-    R --> FS[(Sistema de arquivos)]
-    R --> AG[Agregação]
-    AG --> TR[Treemap]
-    AG --> LF[Top 500 arquivos]
-    AG --> DC[Candidatos por tamanho]
-    TR --> UI
-    LF --> EX[Explorer UI]
-    DC --> EX
-    EX -->|drill-down| R
-    EX -->|abrir local| WIN[Windows Explorer]
+    UI -->|scan_path| T[Tauri 2]
+    T --> D{Raiz de unidade?}
+    D -->|sim| M[MFT / NTFS]
+    D -->|não| W[WalkDir]
+    M -->|sem privilégio / erro| W
+    M --> IX[Índice de sessão]
+    W --> IX
+    IX --> S[Busca global]
+    IX --> B[Browse instantâneo]
+    IX --> R[Relatórios por caminho]
+    S --> UI
+    B --> UI
+    R --> UI
 ```
 
-## Fluxo de exploração
+## Fluxo de navegação indexada
 
 ```mermaid
 sequenceDiagram
     participant U as Usuário
-    participant UI as Explorer UI
-    participant R as Scanner Rust
-    participant W as Windows Explorer
+    participant UI as Interface
+    participant I as Índice Rust
+    participant FS as Disco
 
-    U->>UI: clica numa pasta do treemap
-    UI->>R: scan_path(pasta)
-    R-->>UI: ScanReport
-    U->>UI: filtra / ordena arquivos
-    U->>UI: seleciona arquivo
-    UI-->>U: detalhes
-    U->>UI: Mostrar no Explorer
-    UI->>W: open_in_explorer(path)
+    U->>UI: Indexar C:\
+    UI->>FS: leitura inicial
+    FS-->>I: metadados dos arquivos
+    I-->>UI: ScanReport
+    U->>UI: busca "iso"
+    UI->>I: search_index()
+    I-->>UI: resultados em memória
+    U->>UI: entra em Users
+    UI->>I: browse_index()
+    I-->>UI: relatório do recorte
+    Note over I,FS: sem nova varredura física
 ```
+
+## Como a busca funciona
+
+O índice armazena metadados de cada arquivo encontrado:
+
+- caminho;
+- nome;
+- tamanho;
+- extensão;
+- data de modificação;
+- idade calculada.
+
+A interface pede ao backend somente os resultados necessários. O backend filtra o índice completo e devolve até 200 itens por consulta.
+
+O índice não é persistido entre execuções ainda. Persistência incremental via USN Journal fica para uma fase posterior.
 
 ## Segurança
 
-A L.I.V.I.A. continua **somente leitura**. Nenhum arquivo é removido nesta versão.
+A L.I.V.I.A. continua **somente leitura**.
 
-A triagem de duplicatas não autoriza exclusão e não é tratada como prova de igualdade. O Windows Explorer é aberto diretamente, sem shell intermediário ou janela de console.
+O caminho MFT também é somente leitura. Se ele não estiver disponível, o aplicativo não tenta “consertar” permissões, não altera políticas do Windows e não cria serviço privilegiado.
 
 ### SmartScreen
 
@@ -115,9 +142,10 @@ As builds ainda não possuem assinatura Authenticode com certificado confiável.
 | Camada | Tecnologia |
 | --- | --- |
 | Desktop | Tauri 2 |
-| Scanner | Rust |
+| Scanner compatível | Rust + WalkDir |
+| Scanner acelerado | NTFS MFT via Windows |
+| Índice | memória da sessão |
 | Interface | React 19 + TypeScript |
-| Build | Vite |
 | Visualização | Recharts |
 | CI / Release | GitHub Actions |
 
@@ -141,24 +169,19 @@ flowchart TD
     A[v0.1 Fundação] --> B[v0.1.1 Scan responsivo]
     B --> C[v0.1.2 Polish + Themes]
     C --> D[v0.2 Explorer]
-    D --> E[v0.2.1 NTFS + busca global]
+    D --> E[v0.2.1 Índice + MFT + busca global]
     E --> F[v0.2.2 Duplicatas por hash]
     F --> G[v0.3 Limpeza assistida]
-    G --> H[v1.0 Distribuição assinada]
-    E -. plataforma paralela .-> I[Android]
+    G --> H[v0.4 Snapshots + USN Journal]
+    H --> I[v1.0 Distribuição assinada]
+    E -. plataforma paralela .-> J[Android]
 ```
 
-### v0.2.1 — Velocidade e índice
-- benchmark em discos grandes;
-- scanner NTFS especializado usando MFT;
-- busca global;
-- navegação sem reanálise completa quando houver índice disponível.
-
 ### v0.2.2 — Duplicatas confiáveis
-- agrupamento por tamanho;
-- hash rápido;
+- agrupamento global por tamanho;
+- hash rápido parcial;
 - confirmação por hash completo;
-- cálculo de espaço recuperável sem sugerir exclusão automática.
+- cálculo confiável do espaço potencialmente recuperável.
 
 ### v0.3 — Limpeza assistida
 - seleção múltipla;
@@ -167,15 +190,21 @@ flowchart TD
 - histórico;
 - desfazer quando possível.
 
+### v0.4 — Persistência e mudanças
+- snapshots locais;
+- índice persistente;
+- USN Journal para atualizar somente o que mudou;
+- comparação de crescimento entre períodos.
+
 ### Android — futuro
 - protótipo Tauri 2;
 - Storage Access Framework;
 - UI adaptada para toque;
-- compartilhamento das regras de classificação possíveis entre plataformas.
+- compartilhamento das regras de classificação compatíveis.
 
 ## Design
 
-A referência visual contínua é o [Impeccable](https://impeccable.style/): densidade de ferramenta desktop, hierarquia clara e nenhum elemento decorativo tentando se candidatar a protagonista.
+A referência visual contínua é o [Impeccable](https://impeccable.style/): ferramenta desktop primeiro, decoração depois, e nenhuma interface tentando ganhar prêmio por quantidade de cards.
 
 ## Licença
 
