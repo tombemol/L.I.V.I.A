@@ -1,0 +1,53 @@
+name: Release Windows
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build and publish Windows release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: "L.I.V.I.A. v__VERSION__"
+          releaseBody: |
+            Primeira versão funcional da L.I.V.I.A.
+
+            - análise local de pasta ou unidade;
+            - scanner em Rust;
+            - treemap e distribuição por extensão;
+            - maiores arquivos;
+            - recomendações conservadoras;
+            - nenhum arquivo é excluído nesta versão.
+          releaseDraft: false
+          prerelease: true
+          args: --bundles nsis
