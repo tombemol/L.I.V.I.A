@@ -9,9 +9,11 @@ import {
   FileSearch,
   FolderOpen,
   HardDrive,
+  Moon,
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Sun,
   X
 } from "lucide-react";
 import { StorageTreemap } from "./components/StorageTreemap";
@@ -43,6 +45,30 @@ function Brand({ detail }: { detail?: string }) {
   );
 }
 
+type Theme = "dark" | "light";
+
+function ThemeToggle({
+  theme,
+  onToggle
+}: {
+  theme: Theme;
+  onToggle: () => void;
+}) {
+  const next = theme === "dark" ? "claro" : "escuro";
+  return (
+    <button
+      className="theme-toggle"
+      type="button"
+      onClick={onToggle}
+      title={`Mudar para tema ${next}`}
+      aria-label={`Mudar para tema ${next}`}
+    >
+      {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+      <span>{theme === "dark" ? "Claro" : "Escuro"}</span>
+    </button>
+  );
+}
+
 function Metric({
   label,
   value,
@@ -68,6 +94,17 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [cancelRequested, setCancelRequested] = useState(false);
   const [systemDrive, setSystemDrive] = useState("C:\\");
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = localStorage.getItem("livia-theme");
+    if (saved === "light" || saved === "dark") return saved;
+    return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem("livia-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     invoke<string>("system_drive")
@@ -96,6 +133,10 @@ export default function App() {
     () => report?.recommendations.reduce((sum, item) => sum + item.size, 0) ?? 0,
     [report]
   );
+
+  function toggleTheme() {
+    setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }
 
   async function chooseAndScan() {
     setError(null);
@@ -156,7 +197,10 @@ export default function App() {
       <main className="utility-shell">
         <header className="topbar">
           <Brand detail="Análise em andamento" />
-          <span className="version-pill">v0.1.1</span>
+          <div className="topbar-actions">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <span className="version-pill">v0.1.2</span>
+          </div>
         </header>
 
         <section className="scan-stage">
@@ -231,7 +275,10 @@ export default function App() {
       <main className="utility-shell">
         <header className="topbar">
           <Brand />
-          <span className="version-pill">v0.1.1</span>
+          <div className="topbar-actions">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <span className="version-pill">v0.1.2</span>
+          </div>
         </header>
 
         <section className="start-stage">
@@ -291,6 +338,7 @@ export default function App() {
       <header className="topbar report-topbar">
         <Brand detail={shortPath(report.root, 54)} />
         <div className="topbar-actions">
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <button className="secondary-action" type="button" onClick={() => scan(report.root)}>
             <RefreshCw size={15} />
             Reanalisar
@@ -446,7 +494,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.1.1 · somente leitura · nenhum arquivo é excluído.</span>
+        <span>v0.1.2 · somente leitura · nenhum arquivo é excluído.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}

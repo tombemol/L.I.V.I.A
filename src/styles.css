@@ -1,23 +1,71 @@
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #edf3f5;
-  background: #090d11;
+  color: #f4f5f7;
+  background: #0b0c10;
+  color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --bg: #090d11;
-  --surface: #0f151b;
-  --surface-raised: #131b22;
-  --line: #24303a;
-  --line-soft: #192129;
-  --text: #edf3f5;
-  --muted: #8594a0;
-  --muted-strong: #aeb9c1;
-  --accent: #5cc9dc;
-  --accent-hover: #73d2e2;
-  --accent-deep: #2c7e90;
-  --warning: #d7a36f;
-  --danger: #e89a8a;
-  --radius: 7px;
+  --bg: #0b0c10;
+  --topbar: #0e1015;
+  --surface: #12141a;
+  --surface-raised: #181b23;
+  --line: #2a2e39;
+  --line-soft: #20242d;
+  --text: #f4f5f7;
+  --muted: #9299a6;
+  --muted-strong: #b8bec9;
+  --accent: #8b9cff;
+  --accent-hover: #a7b2ff;
+  --accent-deep: #596bd9;
+  --warning: #e3ad72;
+  --danger: #ef9f91;
+  --logo-bg: #11141b;
+  --logo-line: #343a48;
+  --track: #20242c;
+  --tooltip-bg: #f5f7ff;
+  --tooltip-text: #171a22;
+  --tooltip-muted: #667080;
+  --treemap-label: #fbfcff;
+  --treemap-1: #6f7ff2;
+  --treemap-2: #5f70d8;
+  --treemap-3: #4f9ea7;
+  --treemap-4: #53627d;
+  --treemap-5: #8d70b8;
+  --treemap-6: #3e4a61;
+  --radius: 8px;
+}
+
+:root[data-theme="light"] {
+  color: #20242c;
+  background: #f4f5f7;
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --topbar: #ffffff;
+  --surface: #ffffff;
+  --surface-raised: #eef0f4;
+  --line: #d7dbe3;
+  --line-soft: #e8eaf0;
+  --text: #20242c;
+  --muted: #6f7682;
+  --muted-strong: #535b67;
+  --accent: #5969e8;
+  --accent-hover: #4657db;
+  --accent-deep: #3f50c9;
+  --warning: #a5672c;
+  --danger: #b94b3f;
+  --logo-bg: #f8f9fb;
+  --logo-line: #cfd4df;
+  --track: #e2e5eb;
+  --tooltip-bg: #20242c;
+  --tooltip-text: #ffffff;
+  --tooltip-muted: #c8ced8;
+  --treemap-label: #ffffff;
+  --treemap-1: #6372e6;
+  --treemap-2: #5262cc;
+  --treemap-3: #448b94;
+  --treemap-4: #6d7891;
+  --treemap-5: #8a6daf;
+  --treemap-6: #59647a;
 }
 
 * {
@@ -72,7 +120,7 @@ button:focus-visible {
   justify-content: space-between;
   gap: 20px;
   border-bottom: 1px solid var(--line-soft);
-  background: #0b1015;
+  background: var(--topbar);
 }
 
 .report-topbar {
@@ -112,9 +160,9 @@ button:focus-visible {
   width: 34px;
   height: 34px;
   flex: 0 0 auto;
-  border: 1px solid #31434d;
+  border: 1px solid var(--logo-line);
   border-radius: 8px;
-  background: #0b1217;
+  background: var(--logo-bg);
 }
 
 .logo-l-v,
@@ -238,7 +286,7 @@ button:focus-visible {
   border: 1px solid #2d3d47;
   border-radius: 7px;
   color: #88a6b2;
-  background: #0e151a;
+  background: var(--surface-raised);
 }
 
 .target-copy {
@@ -297,7 +345,7 @@ button:focus-visible {
 
 .secondary-action:hover {
   border-color: #354651;
-  background: #10171d;
+  background: var(--surface-raised);
 }
 
 .danger-action {
@@ -615,7 +663,7 @@ button:focus-visible {
   grid-column: 1 / -1;
   height: 2px;
   overflow: hidden;
-  background: #182129;
+  background: var(--track);
 }
 
 .extension-track span {
@@ -820,4 +868,81 @@ button:focus-visible {
   .file-row > :nth-child(3) {
     display: none;
   }
+}
+
+
+.theme-toggle {
+  min-height: 32px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted-strong);
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.theme-toggle:hover {
+  color: var(--text);
+  background: var(--surface-raised);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+}
+
+.treemap-cell rect {
+  transition: filter 120ms ease, opacity 120ms ease;
+}
+
+.treemap-cell:hover rect {
+  filter: brightness(1.08);
+}
+
+.treemap-tooltip {
+  min-width: 150px;
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--tooltip-text) 12%, transparent);
+  border-radius: 8px;
+  color: var(--tooltip-text);
+  background: var(--tooltip-bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
+.treemap-tooltip strong {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.treemap-tooltip span {
+  font-size: 15px;
+  font-weight: 720;
+  font-variant-numeric: tabular-nums;
+}
+
+.treemap-tooltip small {
+  color: var(--tooltip-muted);
+  font-size: 9px;
+}
+
+:root[data-theme="light"] .section-kicker,
+:root[data-theme="light"] .metric-label {
+  color: #667184;
+}
+
+:root[data-theme="light"] .current-path code,
+:root[data-theme="light"] .recommendation-reason > span {
+  color: var(--muted-strong);
+}
+
+:root[data-theme="light"] .floating-error {
+  box-shadow: 0 12px 32px rgba(26, 31, 43, 0.16);
 }

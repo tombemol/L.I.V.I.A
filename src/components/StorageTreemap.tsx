@@ -17,28 +17,68 @@ type TreemapNode = {
   index?: number;
 };
 
-function Cell({ depth, x = 0, y = 0, width = 0, height = 0, name = "", index = 0 }: TreemapNode) {
+type TooltipContentProps = {
+  active?: boolean;
+  payload?: Array<{
+    payload?: {
+      name?: string;
+      size?: number;
+      files?: number;
+    };
+  }>;
+};
+
+function Cell({
+  depth,
+  x = 0,
+  y = 0,
+  width = 0,
+  height = 0,
+  name = "",
+  index = 0
+}: TreemapNode) {
   if (depth !== 1) return null;
-  const palette = ["#2f93aa", "#347f98", "#396f87", "#3d6277", "#41586a", "#44505f"];
+
+  const palette = [
+    "var(--treemap-1)",
+    "var(--treemap-2)",
+    "var(--treemap-3)",
+    "var(--treemap-4)",
+    "var(--treemap-5)",
+    "var(--treemap-6)"
+  ];
   const fill = palette[index % palette.length];
   const showLabel = width > 92 && height > 44;
 
   return (
-    <g>
+    <g className="treemap-cell">
       <rect
         x={x}
         y={y}
         width={Math.max(0, width - 2)}
         height={Math.max(0, height - 2)}
-        rx={4}
+        rx={6}
         fill={fill}
       />
       {showLabel ? (
-        <text x={x + 10} y={y + 20} fill="#f4f7f8" fontSize={12} fontWeight={650}>
+        <text x={x + 10} y={y + 20} fill="var(--treemap-label)" fontSize={12} fontWeight={650}>
           {name.length > 22 ? `${name.slice(0, 20)}…` : name}
         </text>
       ) : null}
     </g>
+  );
+}
+
+function TreemapTooltip({ active, payload }: TooltipContentProps) {
+  const item = payload?.[0]?.payload;
+  if (!active || !item) return null;
+
+  return (
+    <div className="treemap-tooltip">
+      <strong>{item.name ?? "Pasta"}</strong>
+      <span>{formatBytes(Number(item.size ?? 0))}</span>
+      <small>{Number(item.files ?? 0).toLocaleString("pt-BR")} arquivos</small>
+    </div>
   );
 }
 
@@ -65,16 +105,7 @@ export function StorageTreemap({ data }: Props) {
           aspectRatio={16 / 8}
           isAnimationActive={false}
         >
-          <Tooltip
-            cursor={false}
-            contentStyle={{
-              background: "#10151b",
-              border: "1px solid #28323d",
-              borderRadius: 6,
-              color: "#f4f7f8"
-            }}
-            formatter={(value) => [formatBytes(Number(value ?? 0)), "Espaço"]}
-          />
+          <Tooltip cursor={false} content={<TreemapTooltip />} />
         </Treemap>
       </ResponsiveContainer>
     </div>
