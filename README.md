@@ -82,7 +82,7 @@ L.I.V.I.A.
 - [x] treemap;
 - [x] recomendações iniciais;
 - [x] CI e release Windows;
-- [ ] validar build no runner Windows;
+- [x] validar build no runner Windows;
 - [ ] benchmark em discos grandes.
 
 ### 0.2
@@ -98,6 +98,12 @@ L.I.V.I.A.
 - [ ] lixeira em vez de exclusão direta;
 - [ ] histórico das ações;
 - [ ] desfazer quando tecnicamente possível.
+
+## Versão atual
+
+**v0.1.0 — Foundation**
+
+A primeira versão funcional já possui scanner local em Rust, visualização de armazenamento e recomendações somente leitura. O build Windows é validado no GitHub Actions antes de cada merge.
 
 ## Design
 
