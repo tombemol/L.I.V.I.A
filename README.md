@@ -12,7 +12,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.2.1--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.2.2--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -40,7 +40,9 @@ Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa
 | Fallback seguro sem MFT | ✅ |
 | Abrir arquivo no Explorer | ✅ |
 | Triagem inicial de duplicatas | ✅ |
-| Hash de duplicatas | 🗓️ Próxima etapa |
+| Hash parcial + confirmação completa | ✅ v0.2.2 |
+| Espaço recuperável confirmado | ✅ v0.2.2 |
+| Exclusão automática | ❌ não existe |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -60,7 +62,7 @@ Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa
 - [x] README atualizado;
 - [x] validar CI Windows;
 - [x] validar instalador;
-- [ ] publicar v0.2.1.
+- [x] publicar v0.2.1.
 
 ### MFT e privilégios
 
@@ -69,6 +71,38 @@ O caminho acelerado usa enumeração da **Master File Table** quando a análise 
 O acesso direto à MFT no Windows requer elevação. A L.I.V.I.A. **não se autoeleva** e não força UAC. Se o acesso não estiver disponível, a análise continua com o scanner convencional e informa o fallback na interface.
 
 Isso é intencional: pedir permissão administrativa automaticamente só para parecer rápido seria uma maneira impressionante de piorar ainda mais a primeira impressão de um aplicativo que já precisa lidar com SmartScreen.
+
+## v0.2.2 — Duplicatas confiáveis
+
+A verificação de duplicatas agora acontece **sob demanda**. A indexação inicial continua leve: primeiro os candidatos são agrupados por tamanho, depois a L.I.V.I.A. calcula um hash BLAKE3 de amostras do início e do fim dos arquivos e só lê o conteúdo inteiro dos grupos que continuam iguais.
+
+### Entregas
+
+- [x] agrupar candidatos em todo o índice pelo tamanho exato;
+- [x] ignorar arquivos menores que 1 MB para evitar ruído;
+- [x] hash parcial BLAKE3 com amostras de 64 KiB do início e do fim;
+- [x] hash completo apenas nos candidatos que sobrevivem à triagem;
+- [x] rejeitar arquivos cujo tamanho mudou desde a indexação;
+- [x] mostrar progresso da verificação na interface;
+- [x] mostrar grupos confirmados e espaço potencialmente recuperável;
+- [x] manter a operação estritamente somente leitura;
+- [ ] validar CI Windows e instalador;
+- [ ] publicar v0.2.2.
+
+### Fluxo da confirmação
+
+```mermaid
+flowchart LR
+    I[Índice da sessão] --> S[Agrupar por tamanho]
+    S --> P[BLAKE3 parcial]
+    P -->|não bate| D[Descartar candidato]
+    P -->|bate| F[BLAKE3 completo]
+    F -->|hash diferente| D
+    F -->|hash igual| C[Duplicata confirmada]
+    C --> R[Calcular espaço recuperável]
+```
+
+Nenhum arquivo é removido nesta fase. A L.I.V.I.A. só prova que os conteúdos são iguais e mostra onde eles estão. Humanos continuam responsáveis pelo botão destrutivo, uma tradição que estranhamente ainda faz sentido.
 
 ## Arquitetura
 
@@ -178,10 +212,10 @@ flowchart TD
 ```
 
 ### v0.2.2 — Duplicatas confiáveis
-- agrupamento global por tamanho;
-- hash rápido parcial;
-- confirmação por hash completo;
-- cálculo confiável do espaço potencialmente recuperável.
+- ✅ agrupamento global por tamanho;
+- ✅ hash rápido parcial BLAKE3;
+- ✅ confirmação por hash completo;
+- ✅ cálculo confiável do espaço potencialmente recuperável.
 
 ### v0.3 — Limpeza assistida
 - seleção múltipla;

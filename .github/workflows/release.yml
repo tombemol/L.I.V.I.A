@@ -42,12 +42,12 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            - scanner executado fora da thread da interface;
-            - progresso ao vivo e cancelamento;
-            - menor uso de memória em análises grandes;
-            - interface desktop redesenhada;
-            - novo ícone;
-            - análise e recomendações continuam somente leitura.
+            - índice de sessão e busca global sem revarrer o disco;
+            - navegação instantânea pelo índice e aceleração NTFS/MFT quando disponível;
+            - confirmação de duplicatas em duas etapas com BLAKE3;
+            - cálculo do espaço potencialmente recuperável por duplicatas confirmadas;
+            - interface desktop com temas claro e escuro;
+            - análise, hashing e recomendações continuam somente leitura.
 
             Observação: esta pré-release ainda não possui assinatura Authenticode. O Windows SmartScreen pode exibir "Fornecedor desconhecido" até a adoção de um certificado de code signing confiável.
           releaseDraft: false
