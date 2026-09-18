@@ -1262,6 +1262,97 @@ button:focus-visible {
   background: var(--surface-raised);
 }
 
+.duplicate-heading {
+  align-items: center;
+}
+
+.duplicate-progress-card {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-raised);
+}
+
+.duplicate-progress-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent);
+}
+
+.duplicate-progress-copy > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.duplicate-progress-copy strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.duplicate-progress-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.duplicate-progress-stats,
+.duplicate-result-summary {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.duplicate-progress-stats span,
+.duplicate-result-summary > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border-left: 1px solid var(--line-soft);
+}
+
+.duplicate-progress-stats span:first-child,
+.duplicate-result-summary > div:first-child {
+  border-left: 0;
+}
+
+.duplicate-progress-stats span {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.duplicate-progress-stats strong,
+.duplicate-result-summary strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.duplicate-result-summary > div {
+  display: grid;
+  gap: 4px;
+}
+
+.duplicate-list.verified .duplicate-summary code {
+  max-width: 240px;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 8px;
+  text-overflow: ellipsis;
+}
+
+.duplicate-empty {
+  margin-top: 10px;
+}
+
+
 @media (max-width: 1050px) {
   .explorer-toolbar {
     grid-template-columns: 1fr 1fr;
@@ -1273,6 +1364,22 @@ button:focus-visible {
 
   .explorer-layout {
     grid-template-columns: 1fr;
+  }
+
+  .duplicate-progress-stats,
+  .duplicate-result-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .duplicate-progress-stats span:nth-child(3),
+  .duplicate-result-summary > div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .duplicate-progress-stats span:nth-child(4),
+  .duplicate-result-summary > div:nth-child(4) {
+    border-top: 1px solid var(--line-soft);
   }
 
   .detail-panel {
