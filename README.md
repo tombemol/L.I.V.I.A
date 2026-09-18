@@ -2,7 +2,7 @@
 
 <img src="docs/assets/livia-mark.svg" width="112" alt="L.I.V.I.A. logo" />
 
-<img src="public/livia-mascot.svg" width="230" alt="Lívia, a cyber assistente da L.I.V.I.A." />
+<img src="public/livia/livia-sprites.webp" width="720" alt="Lívia chibi em seis expressões: normal, feliz, explicando, julgando, preocupada e escaneando." />
 
 # L.I.V.I.A.
 
@@ -35,9 +35,23 @@ Ela foi desenhada para ser útil antes de ser decorativa: cabelo lilás/prateado
 - **Analisando:** acompanha a varredura e mostra o progresso em linguagem humana.
 - **Explicando:** ao selecionar arquivos como DLL, PAK, ISO, SYS, ZIP ou JSON, explica o que aquele tipo normalmente representa.
 - **Julgando com carinho:** comenta arquivos muito antigos e duplicatas confirmadas.
-- **Contextual:** muda expressão para análise, sucesso, preocupação, explicação, suspeita e bagunça.
+- **Contextual:** usa os assets oficiais **Normal, Feliz, Explicando, Julgando, Preocupada e Escaneando** conforme o estado do aplicativo.
 - **Não intrusiva:** o avatar fica no canto; o balão pode ser fechado e reaparece apenas em eventos relevantes.
 - **Seguro por design:** nenhuma fala da Lívia transforma sugestão em exclusão automática.
+
+### Assets oficiais da personagem
+
+A tira acima é a fonte visual usada pelo próprio aplicativo. Não existe mais uma “versão vetorial aproximada” da mascote: o avatar do canto usa os mesmos chibis aprovados, recortados como sprites.
+
+| Estado visual | Uso principal |
+| --- | --- |
+| **Normal** | espera / início |
+| **Feliz** | análise concluída sem grande alerta |
+| **Explicando** | arquivo selecionado e explicações de extensão |
+| **Julgando** | duplicatas, excesso de itens e comentários irônicos |
+| **Preocupada** | erros e situações que pedem cautela |
+| **Escaneando** | varredura do disco e confirmação por hash |
+
 
 ```mermaid
 flowchart LR
