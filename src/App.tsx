@@ -16,7 +16,10 @@ import {
   FolderOpen,
   Gauge,
   HardDrive,
+  LayoutGrid,
+  List,
   Moon,
+  PieChart as PieChartIcon,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -27,6 +30,7 @@ import {
 } from "lucide-react";
 import { StorageTreemap } from "./components/StorageTreemap";
 import { ExtensionList } from "./components/ExtensionList";
+import { DistributionPie } from "./components/DistributionPie";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
 import type {
   DuplicateProgress,
@@ -66,6 +70,8 @@ function Brand({ detail }: { detail?: string }) {
 type Theme = "dark" | "light";
 type SortKey = "size" | "name" | "age" | "extension";
 type SortDirection = "asc" | "desc";
+type FolderView = "treemap" | "pie";
+type ExtensionView = "list" | "pie";
 
 function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
   const next = theme === "dark" ? "claro" : "escuro";
@@ -157,6 +163,12 @@ export default function App() {
   const [duplicateBusy, setDuplicateBusy] = useState(false);
   const [duplicateProgress, setDuplicateProgress] = useState<DuplicateProgress | null>(null);
   const [duplicateReport, setDuplicateReport] = useState<DuplicateReport | null>(null);
+  const [folderView, setFolderView] = useState<FolderView>(() =>
+    localStorage.getItem("livia-folder-view") === "pie" ? "pie" : "treemap"
+  );
+  const [extensionView, setExtensionView] = useState<ExtensionView>(() =>
+    localStorage.getItem("livia-extension-view") === "pie" ? "pie" : "list"
+  );
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem("livia-theme");
     if (saved === "light" || saved === "dark") return saved;
@@ -168,6 +180,14 @@ export default function App() {
     document.documentElement.style.colorScheme = theme;
     localStorage.setItem("livia-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem("livia-folder-view", folderView);
+  }, [folderView]);
+
+  useEffect(() => {
+    localStorage.setItem("livia-extension-view", extensionView);
+  }, [extensionView]);
 
   useEffect(() => {
     invoke<string>("system_drive")
@@ -561,10 +581,53 @@ export default function App() {
               <span className="section-kicker">MAPA DE ESPAÇO</span>
               <h2>Distribuição por pasta</h2>
             </div>
-            <HardDrive size={19} />
+            <div className="section-heading-actions">
+              <div className="view-toggle" role="group" aria-label="Visualização das pastas">
+                <button
+                  type="button"
+                  className={folderView === "treemap" ? "active" : ""}
+                  onClick={() => setFolderView("treemap")}
+                  aria-pressed={folderView === "treemap"}
+                  title="Visualizar como mapa de blocos"
+                >
+                  <LayoutGrid size={13} />
+                  <span>Mapa</span>
+                </button>
+                <button
+                  type="button"
+                  className={folderView === "pie" ? "active" : ""}
+                  onClick={() => setFolderView("pie")}
+                  aria-pressed={folderView === "pie"}
+                  title="Visualizar como gráfico de pizza"
+                >
+                  <PieChartIcon size={13} />
+                  <span>Pizza</span>
+                </button>
+              </div>
+              <HardDrive size={19} />
+            </div>
           </div>
-          <StorageTreemap data={report.directories} onNavigate={(path) => path !== report.root && browse(path)} />
-          <p className="section-note">Clique em um bloco para navegar usando o índice, sem nova varredura física.</p>
+
+          {folderView === "treemap" ? (
+            <StorageTreemap data={report.directories} onNavigate={(path) => path !== report.root && browse(path)} />
+          ) : (
+            <DistributionPie
+              data={report.directories.map((item) => ({
+                label: item.name,
+                value: item.size,
+                detail: `${item.fileCount.toLocaleString("pt-BR")} arquivos`,
+                path: item.path
+              }))}
+              ariaLabel="Distribuição do armazenamento por pasta em gráfico de pizza"
+              onSelect={(item) => item.path && item.path !== report.root && browse(item.path)}
+            />
+          )}
+
+          <p className="section-note">
+            {folderView === "treemap"
+              ? "Clique em um bloco para navegar usando o índice, sem nova varredura física."
+              : "Clique em uma fatia ou item da legenda para navegar. Categorias menores são agrupadas em Outros."}
+          </p>
         </article>
 
         <article className="surface extension-surface">
@@ -573,9 +636,47 @@ export default function App() {
               <span className="section-kicker">TIPOS</span>
               <h2>Extensões mais pesadas</h2>
             </div>
-            <FileArchive size={19} />
+            <div className="section-heading-actions">
+              <div className="view-toggle" role="group" aria-label="Visualização das extensões">
+                <button
+                  type="button"
+                  className={extensionView === "list" ? "active" : ""}
+                  onClick={() => setExtensionView("list")}
+                  aria-pressed={extensionView === "list"}
+                  title="Visualizar como lista"
+                >
+                  <List size={13} />
+                  <span>Lista</span>
+                </button>
+                <button
+                  type="button"
+                  className={extensionView === "pie" ? "active" : ""}
+                  onClick={() => setExtensionView("pie")}
+                  aria-pressed={extensionView === "pie"}
+                  title="Visualizar como gráfico de pizza"
+                >
+                  <PieChartIcon size={13} />
+                  <span>Pizza</span>
+                </button>
+              </div>
+              <FileArchive size={19} />
+            </div>
           </div>
-          <ExtensionList data={report.extensions} />
+
+          {extensionView === "list" ? (
+            <ExtensionList data={report.extensions} />
+          ) : (
+            <DistributionPie
+              data={report.extensions.map((item) => ({
+                label: item.extension,
+                value: item.size,
+                detail: `${item.count.toLocaleString("pt-BR")} arquivos`
+              }))}
+              ariaLabel="Distribuição do armazenamento por extensão em gráfico de pizza"
+              compact
+              maxSlices={7}
+            />
+          )}
         </article>
       </section>
 

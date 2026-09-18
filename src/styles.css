@@ -38,6 +38,14 @@
   --treemap-4: #53627d;
   --treemap-5: #8d70b8;
   --treemap-6: #3e4a61;
+  --chart-1: #7183ff;
+  --chart-2: #4f9ea7;
+  --chart-3: #9a74c1;
+  --chart-4: #d28a63;
+  --chart-5: #5d70cf;
+  --chart-6: #61a278;
+  --chart-7: #53627d;
+  --chart-8: #c6a35c;
   --radius: 8px;
 }
 
@@ -78,6 +86,14 @@
   --treemap-4: #6d7891;
   --treemap-5: #8a6daf;
   --treemap-6: #59647a;
+  --chart-1: #5969e8;
+  --chart-2: #448b94;
+  --chart-3: #8467ad;
+  --chart-4: #b96e48;
+  --chart-5: #6f7fd0;
+  --chart-6: #4f8a63;
+  --chart-7: #667188;
+  --chart-8: #9b7a31;
 }
 
 * {
@@ -601,6 +617,242 @@ button:focus-visible {
   color: var(--muted);
 }
 
+.section-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.view-toggle {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+}
+
+.view-toggle button {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 680;
+  transition: color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.view-toggle button:hover:not(.active) {
+  color: var(--text);
+}
+
+.view-toggle button.active {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 1px 4px color-mix(in srgb, #000 18%, transparent);
+}
+
+.distribution-pie {
+  min-height: 330px;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(250px, 0.9fr) minmax(250px, 1.1fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.distribution-pie.compact {
+  min-height: 344px;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.pie-chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  min-width: 0;
+}
+
+.distribution-pie.compact .pie-chart-wrap {
+  width: min(240px, 100%);
+  height: 210px;
+  margin: 0 auto;
+}
+
+.pie-center {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 110px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 3px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.pie-center span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 760;
+  letter-spacing: 0.13em;
+}
+
+.pie-center strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.distribution-pie.compact .pie-center strong {
+  font-size: 13px;
+}
+
+.pie-slice {
+  outline: none;
+  transition: opacity 120ms ease, filter 120ms ease;
+}
+
+.pie-slice.clickable {
+  cursor: pointer;
+}
+
+.pie-slice:hover {
+  filter: brightness(1.08);
+}
+
+.pie-legend {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+}
+
+.distribution-pie.compact .pie-legend {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--line-soft);
+}
+
+.pie-legend-row {
+  width: 100%;
+  min-width: 0;
+  min-height: 45px;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 4px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+
+.distribution-pie.compact .pie-legend-row {
+  padding: 7px 8px;
+}
+
+.distribution-pie.compact .pie-legend-row:nth-child(-n + 2) {
+  border-top: 0;
+}
+
+.pie-legend-row.clickable {
+  cursor: pointer;
+}
+
+.pie-legend-row.clickable:hover {
+  background: var(--surface-raised);
+}
+
+.pie-legend-dot,
+.pie-tooltip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.pie-legend-copy,
+.pie-legend-value {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.pie-legend-copy strong,
+.pie-legend-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pie-legend-copy strong {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.pie-legend-copy small,
+.pie-legend-value small {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.pie-legend-value {
+  justify-items: end;
+}
+
+.pie-legend-value strong {
+  color: var(--muted-strong);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pie-tooltip {
+  min-width: 165px;
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid color-mix(in srgb, var(--tooltip-text) 12%, transparent);
+  border-radius: 8px;
+  color: var(--tooltip-text);
+  background: var(--tooltip-bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.pie-tooltip-dot {
+  margin-top: 5px;
+}
+
+.pie-tooltip > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.pie-tooltip strong {
+  font-size: 10px;
+}
+
+.pie-tooltip span:not(.pie-tooltip-dot) {
+  font-size: 14px;
+  font-weight: 720;
+}
+
+.pie-tooltip small {
+  color: var(--tooltip-muted);
+  font-size: 8px;
+}
+
 .treemap-wrap {
   height: 330px;
   margin: 12px -2px 0;
@@ -826,6 +1078,26 @@ button:focus-visible {
 @media (max-width: 980px) {
   .analysis-grid {
     grid-template-columns: 1fr;
+  }
+
+  .distribution-pie,
+  .distribution-pie.compact {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1.2fr);
+  }
+
+  .distribution-pie.compact .pie-chart-wrap {
+    width: 100%;
+    height: 280px;
+  }
+
+  .distribution-pie.compact .pie-legend {
+    grid-template-columns: 1fr;
+    border-top: 0;
+  }
+
+  .distribution-pie.compact .pie-legend-row,
+  .distribution-pie.compact .pie-legend-row:nth-child(-n + 2) {
+    border-top: 1px solid var(--line-soft);
   }
 
   .scan-metrics,
@@ -1478,5 +1750,41 @@ button:focus-visible {
 
   .engine-fallback {
     margin-left: 25px;
+  }
+}
+
+@media (max-width: 720px) {
+  .section-heading {
+    align-items: flex-start;
+  }
+
+  .section-heading-actions > svg {
+    display: none;
+  }
+
+  .view-toggle button span {
+    display: none;
+  }
+
+  .view-toggle button {
+    width: 28px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .distribution-pie,
+  .distribution-pie.compact {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .pie-chart-wrap,
+  .distribution-pie.compact .pie-chart-wrap {
+    height: 240px;
+  }
+
+  .pie-legend,
+  .distribution-pie.compact .pie-legend {
+    grid-template-columns: 1fr;
   }
 }
