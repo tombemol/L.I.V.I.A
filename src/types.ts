@@ -64,6 +64,9 @@ export type Recommendation = {
   reason: string;
   risk: "Baixo" | "Revisar";
   confidence: number;
+  impact: "Baixo" | "Médio" | "Alto";
+  evidence: string[];
+  safetyNote: string;
 };
 
 export type ScanEngine = {
