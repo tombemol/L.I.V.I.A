@@ -172,8 +172,8 @@ A área de análise agora pode alternar entre visualizações sem recalcular o �
 - [x] explicações para tipos comuns como DLL, PAK, SYS, ISO, ZIP, JSON e bancos locais;
 - [x] comentários contextuais para arquivos antigos e duplicatas confirmadas;
 - [x] suporte responsivo e integração com os temas claro e escuro;
-- [ ] validar CI Windows e instalador;
-- [ ] publicar v0.2.3.
+- [x] validar CI Windows e instalador;
+- [x] publicar v0.2.3.
 
 ## Arquitetura
 
