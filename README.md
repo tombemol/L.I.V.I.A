@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.5.0--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.5.1--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -98,6 +98,8 @@ flowchart LR
 | Atualização incremental via USN Journal | ✅ v0.4.1 |
 | Histórico visual do armazenamento | ✅ v0.5.0 |
 | Crescimento por pasta e extensão | ✅ v0.5.0 |
+| Recomendações explicáveis | ✅ v0.5.1 |
+| Evidência, confiança, risco e impacto | ✅ v0.5.1 |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -361,6 +363,50 @@ flowchart LR
 
 Snapshots anteriores à v0.5 continuam válidos. Eles aparecem no gráfico de tamanho total, mas só novos snapshots possuem breakdown detalhado por pasta e extensão. Inventar dados históricos que nunca foram coletados seria muito eficiente, pena que também seria mentira.
 
+## v0.5.1 — Recomendações explicáveis
+
+A L.I.V.I.A. parou de apresentar “limpe isso” como se uma regra heurística tivesse recebido um diploma. Cada recomendação agora mostra **por que apareceu**, qual é o risco, qual o impacto estimado e quanta confiança a regra tem naquele caso.
+
+### Entregas
+
+- [x] evidências visíveis por recomendação;
+- [x] confiança percentual da regra;
+- [x] risco **Baixo** ou **Revisar**;
+- [x] impacto **Baixo**, **Médio** ou **Alto** baseado no espaço envolvido;
+- [x] nota de segurança específica por categoria;
+- [x] temporários do perfil com regra contextual;
+- [x] logs antigos e grandes;
+- [x] ISOs antigas;
+- [x] compactados antigos;
+- [x] instaladores antigos, com contexto extra em Downloads;
+- [x] arquivos `.bak` e `.old` antigos;
+- [x] arquivos enormes antigos ou excepcionalmente grandes;
+- [x] Lívia explica a recomendação principal e sua confiança.
+
+A confiança indica **o quanto os sinais combinam com a regra**, não a probabilidade de que o arquivo seja inútil. Um arquivo pode encaixar perfeitamente em “ISO antiga de 8 GB” e ainda ser a única mídia de recuperação do usuário. Por isso a limpeza continua dependendo de revisão humana.
+
+```mermaid
+flowchart LR
+    F[Arquivo indexado] --> S[Sinais]
+    S --> A[idade]
+    S --> B[tamanho]
+    S --> C[tipo]
+    S --> D[local]
+    A --> R[Regra explicável]
+    B --> R
+    C --> R
+    D --> R
+    R --> E[Evidências]
+    R --> Q[Confiança]
+    R --> K[Risco]
+    R --> I[Impacto]
+    E --> U[Revisão do usuário]
+    Q --> U
+    K --> U
+    I --> U
+    U --> L[Limpeza assistida]
+```
+
 ## Arquitetura
 
 ```mermaid
@@ -474,6 +520,7 @@ flowchart TD
     U --> M[v0.4.0 Memória persistente]
     M --> H[v0.4.1 USN Journal]
     H --> V5[v0.5.0 Histórico visual]
+    V5 --> R5[v0.5.1 Recomendações explicáveis]
     H --> I[v1.0 Distribuição assinada]
     E -. plataforma paralela .-> J[Android]
 ```
