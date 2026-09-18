@@ -26,6 +26,9 @@ type Props = {
   selectedFile?: FileEntry | null;
   duplicateBusy?: boolean;
   duplicateReport?: DuplicateReport | null;
+  cleanupCount?: number;
+  cleanupBusy?: boolean;
+  lastCleanup?: { files: number; bytes: number } | null;
 };
 
 type AssistantState = {
@@ -104,7 +107,10 @@ export function LiviaAssistant({
   report,
   selectedFile,
   duplicateBusy = false,
-  duplicateReport
+  duplicateReport,
+  cleanupCount = 0,
+  cleanupBusy = false,
+  lastCleanup
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -127,6 +133,33 @@ export function LiviaAssistant({
           ? `Já passei por ${count.toLocaleString("pt-BR")} arquivos. Agora estou em ${shortPath(progress?.currentPath ?? progress?.root ?? "", 50)}.`
           : "Vou construir o índice primeiro. Depois disso a gente navega sem obrigar o disco a contar a própria vida de novo.",
         key: `scan:${Math.floor(count / 5000)}`
+      };
+    }
+
+    if (cleanupBusy) {
+      return {
+        mood: "worried",
+        title: "Movendo para a Lixeira",
+        message: "Estou validando os arquivos de novo antes de mover qualquer coisa. Se algo mudou desde a análise, eu preservo. Radical, eu sei.",
+        key: "cleanup-busy"
+      };
+    }
+
+    if (lastCleanup?.files) {
+      return {
+        mood: "celebrating",
+        title: "Limpeza concluída",
+        message: `${lastCleanup.files.toLocaleString("pt-BR")} arquivo(s) foram para a Lixeira, liberando até ${formatBytes(lastCleanup.bytes)}. Nada de exclusão permanente escondida atrás de botão bonito.`,
+        key: `cleanup-done:${lastCleanup.files}:${lastCleanup.bytes}`
+      };
+    }
+
+    if (cleanupCount > 0) {
+      return {
+        mood: "judging",
+        title: "Bandeja de limpeza",
+        message: `Você separou ${cleanupCount.toLocaleString("pt-BR")} arquivo(s). Eu só movo depois da revisão e de uma segunda confirmação. Sim, duas. Confiança é ótima; backups também.`,
+        key: `cleanup-selected:${cleanupCount}`
       };
     }
 
@@ -192,7 +225,19 @@ export function LiviaAssistant({
       message: "Fico aqui no canto. Quando você analisar o disco, escolher um arquivo ou confirmar duplicatas, eu explico o que estiver acontecendo sem transformar a tela num carnaval de pop-ups.",
       key: "idle"
     };
-  }, [busy, browsing, duplicateBusy, duplicateReport, error, progress, report, selectedFile]);
+  }, [
+    busy,
+    browsing,
+    cleanupBusy,
+    cleanupCount,
+    duplicateBusy,
+    duplicateReport,
+    error,
+    lastCleanup,
+    progress,
+    report,
+    selectedFile
+  ]);
 
   useEffect(() => {
     if (state.key === "idle") return;
