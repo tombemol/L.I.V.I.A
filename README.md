@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.3.1--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.4.0--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -93,6 +93,8 @@ flowchart LR
 | Limpeza assistida para a Lixeira | ✅ v0.3.0 |
 | Desfazer seguro na sessão | ✅ v0.3.1 |
 | Seleção assistida de duplicatas | ✅ v0.3.1 |
+| Índice persistente entre execuções | ✅ v0.4.0 |
+| Snapshots locais do armazenamento | ✅ v0.4.0 |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -259,6 +261,38 @@ flowchart LR
 
 O desfazer é **ligado à sessão atual**. Ao fechar a aplicação, os identificadores do sistema operacional são descartados. O histórico resumido continua existindo, mas sem dados suficientes para executar uma restauração automática depois de reabrir o app. É menos mágico e muito menos irresponsável.
 
+## v0.4.0 — Memória persistente + snapshots
+
+A L.I.V.I.A. agora **lembra do último índice**. Depois de uma análise concluída, o índice completo fica salvo localmente e é restaurado na próxima abertura sem exigir uma nova varredura física.
+
+Também é criado um snapshot resumido a cada nova indexação. Isso prepara o terreno para a comparação temporal das próximas releases.
+
+### Entregas
+
+- [x] persistência local do índice completo;
+- [x] restauração automática do último índice na inicialização;
+- [x] snapshots resumidos por raiz analisada;
+- [x] até 60 snapshots locais por histórico;
+- [x] snapshot registra tamanho, arquivos, pastas, engine e horário;
+- [x] mini timeline no dashboard com os snapshots recentes;
+- [x] delta de espaço em relação ao snapshot anterior;
+- [x] limpeza e desfazer atualizam o índice persistente;
+- [x] nenhum índice ou snapshot é enviado para fora do computador;
+- [x] Lívia reconhece quando recuperou o armazenamento da memória local.
+
+Os arquivos de estado ficam em `%LOCALAPPDATA%\L.I.V.I.A\state`. O índice é versionado por schema para que futuras mudanças possam invalidar formatos antigos sem interpretar lixo como verdade. Um luxo conhecido em alguns círculos como “não corromper os dados do usuário”.
+
+```mermaid
+flowchart LR
+    S[Varredura completa] --> I[Índice em memória]
+    I --> P[index-v1.json]
+    S --> H[snapshots-v1.json]
+    P --> A[Próxima abertura]
+    A --> R[Restaurar índice sem varrer]
+    H --> T[Mini timeline]
+    R --> B[Busca / drill-down / limpeza]
+```
+
 ## Arquitetura
 
 ```mermaid
@@ -320,7 +354,7 @@ O índice não é persistido entre execuções ainda. Persistência incremental 
 
 ## Segurança
 
-A análise, a indexação, a busca, o MFT e a confirmação de duplicatas continuam **somente leitura**.
+A análise, a busca, o MFT e a confirmação de duplicatas continuam **somente leitura**. Desde a v0.4.0, o índice e snapshots são persistidos localmente em arquivos de estado da própria L.I.V.I.A.; esses dados não saem do computador.
 
 A partir da **v0.3.0**, existe uma ação explícita de limpeza assistida. Ela só opera sobre arquivos que o usuário selecionou, exige revisão e confirmação, valida novamente tamanho e tipo do arquivo antes da ação e usa a **Lixeira do sistema** em vez de exclusão permanente. Arquivos dentro da pasta do Windows e o executável atual da L.I.V.I.A. são bloqueados pelo backend.
 
@@ -369,7 +403,8 @@ flowchart TD
     F --> V[v0.2.3 Visualizações + Lívia]
     V --> G[v0.3 Limpeza assistida]
     G --> U[v0.3.1 Undo seguro]
-    U --> H[v0.4 Snapshots + USN Journal]
+    U --> M[v0.4.0 Memória persistente]
+    M --> H[v0.4.1 USN Journal]
     H --> I[v1.0 Distribuição assinada]
     E -. plataforma paralela .-> J[Android]
 ```
