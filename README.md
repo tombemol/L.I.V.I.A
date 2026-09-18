@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.2.3--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.2.4--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -151,6 +151,20 @@ flowchart LR
 ```
 
 Nenhum arquivo é removido nesta fase. A L.I.V.I.A. só prova que os conteúdos são iguais e mostra onde eles estão. Humanos continuam responsáveis pelo botão destrutivo, uma tradição que estranhamente ainda faz sentido.
+
+## v0.2.4 — Hotfix da Lívia
+
+A v0.2.4 corrige um problema de empacotamento do asset da personagem: o arquivo WebP da sprite sheet havia sido publicado incompleto, então GitHub e aplicativo reservavam o espaço da imagem, mas não conseguiam decodificá-la.
+
+### Correções
+
+- [x] republicar a sprite sheet da Lívia como WebP válido;
+- [x] restaurar a personagem no avatar do aplicativo;
+- [x] restaurar a tira de expressões no README;
+- [x] manter os estados **Normal, Feliz, Explicando, Julgando, Preocupada e Escaneando**;
+- [x] validar o asset antes da release;
+- [ ] validar CI Windows e instalador;
+- [ ] publicar v0.2.4.
 
 ## v0.2.3 — Visualizações + Lívia
 
