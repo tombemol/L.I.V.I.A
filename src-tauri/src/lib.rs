@@ -5,13 +5,15 @@ use scanner::{
 };
 use serde::Serialize;
 use std::{
-    collections::HashSet,
+    collections::{HashSet, VecDeque},
+    ffi::OsString,
     fs,
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, RwLock,
+        Arc, Mutex, RwLock,
     },
+    time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{AppHandle, Emitter, State};
 
@@ -20,6 +22,18 @@ struct ScanState {
     cancel: Arc<AtomicBool>,
     running: Arc<AtomicBool>,
     index: Arc<RwLock<Option<ScanIndex>>>,
+    cleanup_undo: Arc<Mutex<VecDeque<CleanupUndoRecord>>>,
+}
+
+struct CleanupUndoItem {
+    trash_item: trash::TrashItem,
+    file: FileEntry,
+}
+
+struct CleanupUndoRecord {
+    id: String,
+    index_root: String,
+    items: Vec<CleanupUndoItem>,
 }
 
 #[derive(Debug, Serialize)]
@@ -35,6 +49,17 @@ struct CleanupResult {
     moved_files: Vec<FileEntry>,
     moved_bytes: u64,
     failed: Vec<CleanupFailure>,
+    operation_id: Option<String>,
+    undoable_files: usize,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CleanupRestoreResult {
+    restored_files: Vec<FileEntry>,
+    restored_bytes: u64,
+    failed: Vec<CleanupFailure>,
+    remaining_undoable_files: usize,
 }
 
 #[tauri::command]
@@ -166,11 +191,12 @@ async fn move_to_trash(
     }
 
     let index_state = Arc::clone(&state.index);
+    let cleanup_undo = Arc::clone(&state.cleanup_undo);
 
     tauri::async_runtime::spawn_blocking(move || {
         let requested: HashSet<String> = paths.into_iter().collect();
 
-        let candidates = {
+        let (candidates, index_root) = {
             let guard = index_state
                 .read()
                 .map_err(|_| "O índice local ficou indisponível.".to_string())?;
@@ -178,12 +204,15 @@ async fn move_to_trash(
                 .as_ref()
                 .ok_or_else(|| "Faça uma análise antes de limpar arquivos.".to_string())?;
 
-            index
-                .files
-                .iter()
-                .filter(|file| requested.contains(&file.path))
-                .cloned()
-                .collect::<Vec<_>>()
+            (
+                index
+                    .files
+                    .iter()
+                    .filter(|file| requested.contains(&file.path))
+                    .cloned()
+                    .collect::<Vec<_>>(),
+                index.root.clone(),
+            )
         };
 
         if candidates.is_empty() {
@@ -192,6 +221,7 @@ async fn move_to_trash(
 
         let current_exe = std::env::current_exe().ok();
         let windows_dir = std::env::var_os("WINDIR").map(PathBuf::from);
+        let trash_before = trash::os_limited::list().ok();
         let mut moved_files = Vec::<FileEntry>::new();
         let mut failed = Vec::<CleanupFailure>::new();
 
@@ -242,8 +272,36 @@ async fn move_to_trash(
             }
         }
 
+        let mut undo_items = Vec::<CleanupUndoItem>::new();
+
         if !moved_files.is_empty() {
-            let moved_paths: HashSet<&str> = moved_files.iter().map(|file| file.path.as_str()).collect();
+            if let Some(before_items) = trash_before {
+                let before_ids: HashSet<OsString> =
+                    before_items.into_iter().map(|item| item.id).collect();
+
+                if let Ok(after_items) = trash::os_limited::list() {
+                    for file in &moved_files {
+                        let matches = after_items
+                            .iter()
+                            .filter(|item| {
+                                !before_ids.contains(&item.id)
+                                    && same_path(&item.original_path(), Path::new(&file.path))
+                            })
+                            .cloned()
+                            .collect::<Vec<_>>();
+
+                        if matches.len() == 1 {
+                            undo_items.push(CleanupUndoItem {
+                                trash_item: matches[0].clone(),
+                                file: file.clone(),
+                            });
+                        }
+                    }
+                }
+            }
+
+            let moved_paths: HashSet<&str> =
+                moved_files.iter().map(|file| file.path.as_str()).collect();
             let mut guard = index_state
                 .write()
                 .map_err(|_| "O índice local ficou indisponível.".to_string())?;
@@ -260,14 +318,145 @@ async fn move_to_trash(
             .map(|file| file.size)
             .fold(0_u64, u64::saturating_add);
 
+        let undoable_files = undo_items.len();
+        let operation_id = if undoable_files > 0 {
+            let id = cleanup_operation_id();
+            let mut guard = cleanup_undo
+                .lock()
+                .map_err(|_| "O histórico de desfazer ficou indisponível.".to_string())?;
+
+            guard.push_front(CleanupUndoRecord {
+                id: id.clone(),
+                index_root,
+                items: undo_items,
+            });
+
+            while guard.len() > 20 {
+                guard.pop_back();
+            }
+
+            Some(id)
+        } else {
+            None
+        };
+
         Ok(CleanupResult {
             moved_files,
             moved_bytes,
             failed,
+            operation_id,
+            undoable_files,
         })
     })
     .await
     .map_err(|error| format!("Falha ao executar a limpeza assistida: {error}"))?
+}
+
+
+#[tauri::command]
+async fn restore_cleanup(
+    state: State<'_, ScanState>,
+    operation_id: String,
+) -> Result<CleanupRestoreResult, String> {
+    let index_state = Arc::clone(&state.index);
+    let cleanup_undo = Arc::clone(&state.cleanup_undo);
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let (mut items, index_root) = {
+            let mut guard = cleanup_undo
+                .lock()
+                .map_err(|_| "O histórico de desfazer ficou indisponível.".to_string())?;
+            let record = guard
+                .iter_mut()
+                .find(|record| record.id == operation_id)
+                .ok_or_else(|| {
+                    "Esta operação não está mais disponível para desfazer nesta sessão.".to_string()
+                })?;
+
+            if record.items.is_empty() {
+                return Err("Esta operação já foi restaurada.".to_string());
+            }
+
+            (std::mem::take(&mut record.items), record.index_root.clone())
+        };
+
+        let mut restored_files = Vec::<FileEntry>::new();
+        let mut failed = Vec::<CleanupFailure>::new();
+        let mut remaining = Vec::<CleanupUndoItem>::new();
+
+        for item in items.drain(..) {
+            let original_path = item.file.path.clone();
+            match trash::os_limited::restore_all(std::iter::once(item.trash_item.clone())) {
+                Ok(()) => restored_files.push(item.file),
+                Err(error) => {
+                    failed.push(CleanupFailure {
+                        path: original_path,
+                        reason: format!("Não foi possível restaurar da Lixeira: {error}"),
+                    });
+                    remaining.push(item);
+                }
+            }
+        }
+
+        let remaining_undoable_files = remaining.len();
+        {
+            let mut guard = cleanup_undo
+                .lock()
+                .map_err(|_| "O histórico de desfazer ficou indisponível.".to_string())?;
+            if let Some(record) = guard.iter_mut().find(|record| record.id == operation_id) {
+                record.items = remaining;
+            }
+        }
+
+        if !restored_files.is_empty() {
+            if let Ok(mut guard) = index_state.write() {
+                if let Some(index) = guard.as_mut() {
+                    if same_path(Path::new(&index.root), Path::new(&index_root)) {
+                        for file in &restored_files {
+                            if Path::new(&file.path).exists()
+                                && !index.files.iter().any(|current| current.path == file.path)
+                            {
+                                index.files.push(file.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let restored_bytes = restored_files
+            .iter()
+            .map(|file| file.size)
+            .fold(0_u64, u64::saturating_add);
+
+        Ok(CleanupRestoreResult {
+            restored_files,
+            restored_bytes,
+            failed,
+            remaining_undoable_files,
+        })
+    })
+    .await
+    .map_err(|error| format!("Falha ao desfazer a limpeza: {error}"))?
+}
+
+fn cleanup_operation_id() -> String {
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    format!("cleanup-{stamp}")
+}
+
+fn same_path(left: &Path, right: &Path) -> bool {
+    fn normalize(path: &Path) -> String {
+        path.to_string_lossy()
+            .replace('/', "\\")
+            .trim_end_matches('\\')
+            .to_ascii_lowercase()
+    }
+
+    normalize(left) == normalize(right)
 }
 
 fn is_protected_path(target: &Path, current_exe: Option<&Path>, windows_dir: Option<&Path>) -> bool {
@@ -352,6 +541,7 @@ pub fn run() {
             search_index,
             find_duplicates,
             move_to_trash,
+            restore_cleanup,
             cancel_scan,
             system_drive,
             open_in_explorer
@@ -363,7 +553,7 @@ pub fn run() {
 
 #[cfg(test)]
 mod cleanup_tests {
-    use super::is_protected_path;
+    use super::{is_protected_path, same_path};
     use std::path::Path;
 
     #[test]
@@ -390,6 +580,14 @@ mod cleanup_tests {
             Path::new(r"C:\Users\Tom\Downloads\old.iso"),
             Some(Path::new(r"C:\Apps\Livia\L.I.V.I.A.exe")),
             Some(Path::new(r"C:\Windows")),
+        ));
+    }
+
+    #[test]
+    fn compares_windows_paths_case_insensitively() {
+        assert!(same_path(
+            Path::new(r"C:\Users\Tom\Downloads\FILE.ISO"),
+            Path::new(r"c:/users/tom/downloads/file.iso"),
         ));
     }
 }

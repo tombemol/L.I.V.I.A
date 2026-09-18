@@ -116,6 +116,15 @@ export type CleanupResult = {
   movedFiles: FileEntry[];
   movedBytes: number;
   failed: CleanupFailure[];
+  operationId: string | null;
+  undoableFiles: number;
+};
+
+export type CleanupRestoreResult = {
+  restoredFiles: FileEntry[];
+  restoredBytes: number;
+  failed: CleanupFailure[];
+  remainingUndoableFiles: number;
 };
 
 export type CleanupHistoryEntry = {
@@ -124,4 +133,9 @@ export type CleanupHistoryEntry = {
   movedFiles: number;
   movedBytes: number;
   failedFiles: number;
+  operationId?: string;
+  undoableFiles?: number;
+  restoredFiles?: number;
+  restoredBytes?: number;
+  restoreFailedFiles?: number;
 };
