@@ -14,7 +14,7 @@ use walkdir::WalkDir;
 
 const ONE_MB: u64 = 1024 * 1024;
 const ONE_GB: u64 = 1024 * ONE_MB;
-const LARGEST_LIMIT: usize = 40;
+const LARGEST_LIMIT: usize = 500;
 const RECOMMENDATION_LIMIT: usize = 50;
 const PROGRESS_INTERVAL_MS: u128 = 120;
 
@@ -41,8 +41,18 @@ pub struct ExtensionSummary {
 #[serde(rename_all = "camelCase")]
 pub struct DirectorySummary {
     pub name: String,
+    pub path: String,
     pub size: u64,
     pub file_count: u64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DuplicateCandidate {
+    pub size: u64,
+    pub count: usize,
+    pub potential_savings: u64,
+    pub files: Vec<FileEntry>,
 }
 
 #[derive(Debug, Serialize)]
@@ -70,6 +80,7 @@ pub struct ScanReport {
     pub largest_files: Vec<FileEntry>,
     pub extensions: Vec<ExtensionSummary>,
     pub directories: Vec<DirectorySummary>,
+    pub duplicate_candidates: Vec<DuplicateCandidate>,
     pub recommendations: Vec<Recommendation>,
 }
 
@@ -264,6 +275,7 @@ where
         .map(|Reverse(item)| item.file)
         .collect();
     largest_files.sort_by(|a, b| b.size.cmp(&a.size));
+    let duplicate_candidates = find_duplicate_candidates(&largest_files);
 
     sort_and_trim_recommendations(&mut recommendations);
 
@@ -280,10 +292,19 @@ where
 
     let mut directories: Vec<_> = directory_buckets
         .into_iter()
-        .map(|(name, bucket)| DirectorySummary {
-            name,
-            size: bucket.size,
-            file_count: bucket.count,
+        .map(|(name, bucket)| {
+            let path = if name == "(raiz)" {
+                root.clone()
+            } else {
+                root.join(&name)
+            };
+
+            DirectorySummary {
+                name,
+                path: path.to_string_lossy().to_string(),
+                size: bucket.size,
+                file_count: bucket.count,
+            }
         })
         .collect();
     directories.sort_by(|a, b| b.size.cmp(&a.size));
@@ -298,8 +319,40 @@ where
         largest_files,
         extensions,
         directories,
+        duplicate_candidates,
         recommendations,
     })
+}
+
+fn find_duplicate_candidates(files: &[FileEntry]) -> Vec<DuplicateCandidate> {
+    let mut groups = HashMap::<u64, Vec<FileEntry>>::new();
+
+    for file in files.iter().filter(|file| file.size >= ONE_MB) {
+        groups.entry(file.size).or_default().push(file.clone());
+    }
+
+    let mut candidates: Vec<_> = groups
+        .into_iter()
+        .filter(|(_, files)| files.len() > 1)
+        .map(|(size, mut files)| {
+            files.sort_by(|a, b| a.path.cmp(&b.path));
+            let count = files.len();
+            DuplicateCandidate {
+                size,
+                count,
+                potential_savings: size.saturating_mul(count.saturating_sub(1) as u64),
+                files: files.into_iter().take(6).collect(),
+            }
+        })
+        .collect();
+
+    candidates.sort_by(|a, b| {
+        b.potential_savings
+            .cmp(&a.potential_savings)
+            .then_with(|| b.count.cmp(&a.count))
+    });
+    candidates.truncate(12);
+    candidates
 }
 
 fn keep_largest(

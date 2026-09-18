@@ -1,9 +1,12 @@
 mod scanner;
 
 use scanner::{ScanProgress, ScanReport};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use std::{
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 use tauri::{AppHandle, Emitter, State};
 
@@ -54,6 +57,41 @@ fn system_drive() -> String {
     format!("{drive}\\")
 }
 
+#[tauri::command]
+fn open_in_explorer(path: String) -> Result<(), String> {
+    let target = PathBuf::from(&path);
+
+    if !target.exists() {
+        return Err("O caminho não existe mais.".to_string());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        use std::process::Command;
+
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        let mut command = Command::new("explorer.exe");
+        if target.is_file() {
+            command.arg("/select,").arg(&target);
+        } else {
+            command.arg(&target);
+        }
+
+        command
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map(|_| ())
+            .map_err(|error| format!("Não foi possível abrir o Explorer: {error}"))
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Abrir no Explorer está disponível apenas no Windows.".to_string())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -62,7 +100,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             scan_path,
             cancel_scan,
-            system_drive
+            system_drive,
+            open_in_explorer
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a L.I.V.I.A.");

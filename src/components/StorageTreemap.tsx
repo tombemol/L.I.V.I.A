@@ -4,6 +4,7 @@ import { formatBytes } from "../lib/format";
 
 type Props = {
   data: DirectorySummary[];
+  onNavigate?: (path: string) => void;
 };
 
 type TreemapNode = {
@@ -13,8 +14,10 @@ type TreemapNode = {
   width?: number;
   height?: number;
   name?: string;
+  path?: string;
   size?: number;
   index?: number;
+  onNavigate?: (path: string) => void;
 };
 
 type TooltipContentProps = {
@@ -35,7 +38,9 @@ function Cell({
   width = 0,
   height = 0,
   name = "",
-  index = 0
+  path,
+  index = 0,
+  onNavigate
 }: TreemapNode) {
   if (depth !== 1) return null;
 
@@ -49,9 +54,23 @@ function Cell({
   ];
   const fill = palette[index % palette.length];
   const showLabel = width > 92 && height > 44;
+  const canNavigate = Boolean(path && onNavigate && name !== "(raiz)");
 
   return (
-    <g className="treemap-cell">
+    <g
+      className={`treemap-cell${canNavigate ? " navigable" : ""}`}
+      onClick={() => {
+        if (canNavigate && path) onNavigate?.(path);
+      }}
+      role={canNavigate ? "button" : undefined}
+      tabIndex={canNavigate ? 0 : undefined}
+      onKeyDown={(event) => {
+        if (canNavigate && path && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          onNavigate?.(path);
+        }
+      }}
+    >
       <rect
         x={x}
         y={y}
@@ -82,9 +101,10 @@ function TreemapTooltip({ active, payload }: TooltipContentProps) {
   );
 }
 
-export function StorageTreemap({ data }: Props) {
+export function StorageTreemap({ data, onNavigate }: Props) {
   const chartData = data.slice(0, 14).map((item, index) => ({
     name: item.name,
+    path: item.path,
     size: item.size,
     files: item.fileCount,
     index
@@ -101,7 +121,7 @@ export function StorageTreemap({ data }: Props) {
           data={chartData}
           dataKey="size"
           nameKey="name"
-          content={<Cell />}
+          content={<Cell onNavigate={onNavigate} />}
           aspectRatio={16 / 8}
           isAnimationActive={false}
         >
