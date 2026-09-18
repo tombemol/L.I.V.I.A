@@ -7,11 +7,13 @@ import {
   ArrowUpDown,
   ChevronRight,
   Clock3,
+  Database,
   ExternalLink,
   FileArchive,
   Files,
   Filter,
   FolderOpen,
+  Gauge,
   HardDrive,
   Moon,
   RefreshCw,
@@ -19,12 +21,13 @@ import {
   ShieldCheck,
   Sparkles,
   Sun,
-  X
+  X,
+  Zap
 } from "lucide-react";
 import { StorageTreemap } from "./components/StorageTreemap";
 import { ExtensionList } from "./components/ExtensionList";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
-import type { FileEntry, ScanProgress, ScanReport } from "./types";
+import type { FileEntry, ScanProgress, ScanReport, SearchResponse } from "./types";
 
 function LogoGlyph() {
   return (
@@ -82,8 +85,9 @@ function Metric({ label, value, detail }: { label: string; value: string; detail
   );
 }
 
-function buildBreadcrumbs(path: string) {
+function buildBreadcrumbs(path: string, indexRoot: string) {
   const normalized = path.replaceAll("/", "\\");
+  const normalizedIndexRoot = indexRoot.replaceAll("/", "\\").replace(/\\+$/, "");
   const drive = normalized.match(/^([A-Za-z]:)\\?/)?.[1];
 
   if (!drive) {
@@ -93,14 +97,28 @@ function buildBreadcrumbs(path: string) {
   const root = `${drive}\\`;
   const rest = normalized.slice(root.length).split("\\").filter(Boolean);
   let current = root;
-  const crumbs = [{ label: root, path: root }];
+  const crumbs: Array<{ label: string; path: string }> = [];
 
-  for (const part of rest) {
-    current = current.endsWith("\\") ? `${current}${part}` : `${current}\\${part}`;
-    crumbs.push({ label: part, path: current });
+  for (const part of [root, ...rest]) {
+    if (part === root) {
+      current = root;
+    } else {
+      current = current.endsWith("\\") ? `${current}${part}` : `${current}\\${part}`;
+    }
+
+    const normalizedCurrent = current.replace(/\\+$/, "");
+    const insideIndex =
+      normalizedCurrent.toLocaleLowerCase("pt-BR") === normalizedIndexRoot.toLocaleLowerCase("pt-BR") ||
+      normalizedCurrent
+        .toLocaleLowerCase("pt-BR")
+        .startsWith(`${normalizedIndexRoot.toLocaleLowerCase("pt-BR")}\\`);
+
+    if (insideIndex) {
+      crumbs.push({ label: part === root ? root : part, path: current });
+    }
   }
 
-  return crumbs;
+  return crumbs.length ? crumbs : [{ label: shortPath(path, 52), path }];
 }
 
 function formatModified(seconds: number | null) {
@@ -111,6 +129,7 @@ function formatModified(seconds: number | null) {
 export default function App() {
   const [report, setReport] = useState<ScanReport | null>(null);
   const [busy, setBusy] = useState(false);
+  const [browsing, setBrowsing] = useState(false);
   const [progress, setProgress] = useState<ScanProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cancelRequested, setCancelRequested] = useState(false);
@@ -121,6 +140,12 @@ export default function App() {
   const [sortKey, setSortKey] = useState<SortKey>("size");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null);
+  const [searchResult, setSearchResult] = useState<SearchResponse>({
+    total: 0,
+    durationMs: 0,
+    files: []
+  });
+  const [searching, setSearching] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem("livia-theme");
     if (saved === "light" || saved === "dark") return saved;
@@ -156,37 +181,47 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!report || busy) return;
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const result = await invoke<SearchResponse>("search_index", {
+          scope: report.root,
+          query,
+          extension: extensionFilter,
+          minSize,
+          sortKey,
+          sortDirection,
+          limit: 200
+        });
+        if (active) setSearchResult(result);
+      } catch (reason) {
+        if (active) {
+          setError(typeof reason === "string" ? reason : "Não foi possível pesquisar o índice.");
+        }
+      } finally {
+        if (active) setSearching(false);
+      }
+    }, 140);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [report, busy, query, extensionFilter, minSize, sortKey, sortDirection]);
+
   const reclaimable = useMemo(
     () => report?.recommendations.reduce((sum, item) => sum + item.size, 0) ?? 0,
     [report]
   );
 
-  const breadcrumbs = useMemo(() => (report ? buildBreadcrumbs(report.root) : []), [report]);
-
-  const visibleFiles = useMemo(() => {
-    if (!report) return [];
-
-    const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
-    const files = report.largestFiles.filter((file) => {
-      const matchesQuery =
-        !normalizedQuery ||
-        file.name.toLocaleLowerCase("pt-BR").includes(normalizedQuery) ||
-        file.path.toLocaleLowerCase("pt-BR").includes(normalizedQuery);
-      const matchesExtension =
-        extensionFilter === "all" || file.extension === extensionFilter;
-      const matchesSize = file.size >= minSize;
-      return matchesQuery && matchesExtension && matchesSize;
-    });
-
-    return [...files].sort((a, b) => {
-      let value = 0;
-      if (sortKey === "size") value = a.size - b.size;
-      if (sortKey === "name") value = a.name.localeCompare(b.name, "pt-BR");
-      if (sortKey === "extension") value = a.extension.localeCompare(b.extension, "pt-BR");
-      if (sortKey === "age") value = (a.ageDays ?? -1) - (b.ageDays ?? -1);
-      return sortDirection === "asc" ? value : -value;
-    });
-  }, [report, query, extensionFilter, minSize, sortKey, sortDirection]);
+  const breadcrumbs = useMemo(
+    () => (report ? buildBreadcrumbs(report.root, report.indexRoot) : []),
+    [report]
+  );
 
   function toggleTheme() {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
@@ -222,6 +257,7 @@ export default function App() {
     setQuery("");
     setExtensionFilter("all");
     setMinSize(0);
+    setSearchResult({ total: 0, durationMs: 0, files: [] });
     setProgress({
       root: path,
       filesScanned: 0,
@@ -248,6 +284,23 @@ export default function App() {
     }
   }
 
+  async function browse(path: string) {
+    if (!report || browsing || path === report.root) return;
+
+    setBrowsing(true);
+    setSelectedFile(null);
+    setError(null);
+
+    try {
+      const result = await invoke<ScanReport>("browse_index", { path });
+      setReport(result);
+    } catch (reason) {
+      setError(typeof reason === "string" ? reason : "Não foi possível navegar neste caminho.");
+    } finally {
+      setBrowsing(false);
+    }
+  }
+
   async function cancelScan() {
     setCancelRequested(true);
     try {
@@ -269,24 +322,27 @@ export default function App() {
     return (
       <main className="utility-shell">
         <header className="topbar">
-          <Brand detail="Análise em andamento" />
+          <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.2.0</span>
+            <span className="version-pill">v0.2.1</span>
           </div>
         </header>
 
         <section className="scan-stage">
           <div className="scan-heading">
-            <span className="section-kicker">VARREDURA LOCAL</span>
+            <span className="section-kicker">VARREDURA + ÍNDICE</span>
             <h1>Analisando {shortPath(progress?.root ?? "", 52)}</h1>
-            <p>A janela continua responsiva enquanto o scanner percorre o caminho selecionado.</p>
+            <p>
+              A L.I.V.I.A. está construindo o índice da sessão. Depois disso, busca e navegação
+              acontecem sem percorrer o disco outra vez.
+            </p>
           </div>
 
           <div className="scan-progress" aria-label="Análise em andamento"><span /></div>
 
           <div className="scan-metrics">
-            <Metric label="ARQUIVOS" value={(progress?.filesScanned ?? 0).toLocaleString("pt-BR")} detail="lidos até agora" />
+            <Metric label="ARQUIVOS" value={(progress?.filesScanned ?? 0).toLocaleString("pt-BR")} detail="indexados até agora" />
             <Metric label="PASTAS" value={(progress?.foldersScanned ?? 0).toLocaleString("pt-BR")} detail="percorridas" />
             <Metric label="DADOS" value={formatBytes(progress?.bytesScanned ?? 0)} detail="contabilizados" />
             <Metric label="TEMPO" value={formatDuration(progress?.elapsedMs ?? 0)} detail="decorrido" />
@@ -299,8 +355,11 @@ export default function App() {
 
           <div className="scan-actions">
             <div className="scan-note">
-              <ShieldCheck size={15} />
-              <span>Somente metadados são lidos. {progress?.skippedEntries ?? 0} entradas inacessíveis foram ignoradas.</span>
+              <Database size={15} />
+              <span>
+                O índice fica apenas nesta sessão. {progress?.skippedEntries ?? 0} entradas
+                inacessíveis foram ignoradas.
+              </span>
             </div>
             <button className="danger-action" type="button" onClick={cancelScan} disabled={cancelRequested}>
               <X size={16} />
@@ -319,15 +378,18 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.2.0</span>
+            <span className="version-pill">v0.2.1</span>
           </div>
         </header>
 
         <section className="start-stage">
           <div className="start-heading">
             <span className="section-kicker">ANÁLISE LOCAL · WINDOWS</span>
-            <h1>Analisar armazenamento</h1>
-            <p>Escolha uma unidade ou pasta. A L.I.V.I.A. mostra onde o espaço está sendo usado e permite explorar o resultado sem excluir nada.</p>
+            <h1>Indexar armazenamento</h1>
+            <p>
+              Uma análise cria um índice temporário dos arquivos. A busca global e o drill-down
+              usam esse índice sem reanalisar o disco a cada clique.
+            </p>
           </div>
 
           <div className="target-list">
@@ -335,16 +397,16 @@ export default function App() {
               <div className="target-icon"><HardDrive size={20} /></div>
               <div className="target-copy">
                 <strong>Disco do sistema</strong>
-                <span>{systemDrive} · análise completa da unidade</span>
+                <span>{systemDrive} · tenta MFT quando disponível e usa fallback seguro quando não estiver</span>
               </div>
-              <button className="primary-action" type="button" onClick={() => scan(systemDrive)}>Analisar</button>
+              <button className="primary-action" type="button" onClick={() => scan(systemDrive)}>Indexar</button>
             </div>
 
             <div className="target-row">
               <div className="target-icon"><FolderOpen size={20} /></div>
               <div className="target-copy">
                 <strong>Outra pasta ou unidade</strong>
-                <span>Escolha um local específico pelo seletor do Windows</span>
+                <span>Cria um índice somente do local selecionado</span>
               </div>
               <button className="secondary-action" type="button" onClick={chooseAndScan}>Escolher</button>
             </div>
@@ -354,7 +416,7 @@ export default function App() {
             <ShieldCheck size={16} />
             <div>
               <strong>Somente leitura</strong>
-              <span>Os nomes e metadados analisados permanecem no computador.</span>
+              <span>O índice existe apenas em memória e não envia dados para fora do computador.</span>
             </div>
           </div>
 
@@ -370,8 +432,8 @@ export default function App() {
         <Brand detail={shortPath(report.root, 54)} />
         <div className="topbar-actions">
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
-          <button className="secondary-action" type="button" onClick={() => scan(report.root)}>
-            <RefreshCw size={15} /> Reanalisar
+          <button className="secondary-action" type="button" onClick={() => scan(report.indexRoot)}>
+            <RefreshCw size={15} /> Reindexar
           </button>
           <button className="primary-action compact" type="button" onClick={chooseAndScan}>
             <FolderOpen size={15} /> Novo local
@@ -383,18 +445,23 @@ export default function App() {
         {breadcrumbs.map((crumb, index) => (
           <span className="breadcrumb-part" key={crumb.path}>
             {index ? <ChevronRight size={13} /> : null}
-            <button type="button" disabled={crumb.path === report.root} onClick={() => scan(crumb.path)}>
+            <button
+              type="button"
+              disabled={crumb.path === report.root || browsing}
+              onClick={() => browse(crumb.path)}
+            >
               {crumb.label}
             </button>
           </span>
         ))}
+        {browsing ? <span className="breadcrumb-status">consultando índice…</span> : null}
       </nav>
 
       <section className="report-summary">
         <div className="report-title">
-          <span className="section-kicker">RESULTADO DA ANÁLISE</span>
+          <span className="section-kicker">RESULTADO INDEXADO</span>
           <h1 title={report.root}>{shortPath(report.root, 76)}</h1>
-          <p>{formatBytes(report.totalSize)} encontrados em {report.fileCount.toLocaleString("pt-BR")} arquivos.</p>
+          <p>{formatBytes(report.totalSize)} encontrados em {report.fileCount.toLocaleString("pt-BR")} arquivos neste recorte.</p>
         </div>
 
         <div className="review-summary">
@@ -404,10 +471,31 @@ export default function App() {
         </div>
       </section>
 
+      <section className={`engine-strip${report.engine.accelerated ? " accelerated" : ""}`}>
+        <div className="engine-main">
+          {report.engine.accelerated ? <Zap size={16} /> : <Database size={16} />}
+          <div>
+            <strong>{report.engine.label}</strong>
+            <span>
+              {report.engine.accelerated
+                ? "Enumeração NTFS/MFT ativa nesta análise."
+                : "Índice construído pela travessia compatível do sistema de arquivos."}
+            </span>
+          </div>
+        </div>
+        <div className="engine-stats">
+          <Gauge size={14} />
+          <span>{report.indexedFiles.toLocaleString("pt-BR")} arquivos no índice da sessão</span>
+        </div>
+        {report.engine.fallbackReason ? (
+          <p className="engine-fallback">{report.engine.fallbackReason}</p>
+        ) : null}
+      </section>
+
       <section className="metrics-strip">
-        <Metric label="ARQUIVOS" value={report.fileCount.toLocaleString("pt-BR")} detail="itens contabilizados" />
-        <Metric label="PASTAS" value={report.folderCount.toLocaleString("pt-BR")} detail="diretórios percorridos" />
-        <Metric label="TEMPO" value={formatDuration(report.durationMs)} detail="para concluir" />
+        <Metric label="ARQUIVOS" value={report.fileCount.toLocaleString("pt-BR")} detail="neste caminho" />
+        <Metric label="PASTAS" value={report.folderCount.toLocaleString("pt-BR")} detail="neste caminho" />
+        <Metric label="CONSULTA" value={formatDuration(report.durationMs)} detail={report.root === report.indexRoot ? "indexação inicial" : "via índice"} />
         <Metric label="IGNORADOS" value={report.skippedEntries.toLocaleString("pt-BR")} detail="sem acesso" />
       </section>
 
@@ -420,8 +508,8 @@ export default function App() {
             </div>
             <HardDrive size={19} />
           </div>
-          <StorageTreemap data={report.directories} onNavigate={(path) => path !== report.root && scan(path)} />
-          <p className="section-note">Clique em um bloco para analisar aquela pasta.</p>
+          <StorageTreemap data={report.directories} onNavigate={(path) => path !== report.root && browse(path)} />
+          <p className="section-note">Clique em um bloco para navegar usando o índice, sem nova varredura física.</p>
         </article>
 
         <article className="surface extension-surface">
@@ -439,10 +527,10 @@ export default function App() {
       <section className="surface explorer-section">
         <div className="section-heading">
           <div>
-            <span className="section-kicker">EXPLORADOR</span>
-            <h2>500 maiores arquivos desta análise</h2>
+            <span className="section-kicker">BUSCA GLOBAL NO ÍNDICE</span>
+            <h2>Arquivos em {shortPath(report.root, 56)}</h2>
           </div>
-          <Files size={19} />
+          <Search size={19} />
         </div>
 
         <div className="explorer-toolbar">
@@ -451,8 +539,8 @@ export default function App() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Filtrar por nome ou caminho"
-              aria-label="Filtrar arquivos por nome ou caminho"
+              placeholder="Pesquisar em todos os arquivos indexados deste caminho"
+              aria-label="Pesquisar no índice"
             />
           </label>
 
@@ -470,12 +558,22 @@ export default function App() {
             <HardDrive size={14} />
             <select value={minSize} onChange={(event) => setMinSize(Number(event.target.value))} aria-label="Tamanho mínimo">
               <option value={0}>Qualquer tamanho</option>
+              <option value={10 * 1024 * 1024}>≥ 10 MB</option>
               <option value={100 * 1024 * 1024}>≥ 100 MB</option>
               <option value={500 * 1024 * 1024}>≥ 500 MB</option>
               <option value={1024 * 1024 * 1024}>≥ 1 GB</option>
               <option value={5 * 1024 * 1024 * 1024}>≥ 5 GB</option>
             </select>
           </label>
+        </div>
+
+        <div className="search-summary">
+          <span>
+            {searching
+              ? "Pesquisando…"
+              : `${searchResult.total.toLocaleString("pt-BR")} resultados · ${formatDuration(searchResult.durationMs)}`}
+          </span>
+          <small>Mostrando até 200 resultados por consulta.</small>
         </div>
 
         <div className="explorer-layout">
@@ -488,7 +586,7 @@ export default function App() {
             </div>
 
             <div className="explorer-scroll">
-              {visibleFiles.slice(0, 120).map((file) => (
+              {searchResult.files.map((file) => (
                 <button
                   className={`explorer-row explorer-file${selectedFile?.path === file.path ? " selected" : ""}`}
                   type="button"
@@ -506,8 +604,8 @@ export default function App() {
                 </button>
               ))}
 
-              {!visibleFiles.length ? (
-                <div className="explorer-empty">Nenhum dos arquivos destacados corresponde aos filtros.</div>
+              {!searching && !searchResult.files.length ? (
+                <div className="explorer-empty">Nenhum arquivo do índice corresponde aos filtros.</div>
               ) : null}
             </div>
           </div>
@@ -532,15 +630,11 @@ export default function App() {
               <div className="detail-empty">
                 <Files size={22} />
                 <strong>Selecione um arquivo</strong>
-                <span>Veja detalhes ou abra o local correspondente no Explorer.</span>
+                <span>Os resultados agora vêm do índice inteiro, não só dos maiores arquivos.</span>
               </div>
             )}
           </aside>
         </div>
-
-        <p className="section-note">
-          O filtro trabalha sobre os 500 maiores arquivos mantidos em memória. Busca global completa entra junto do scanner NTFS.
-        </p>
       </section>
 
       {report.duplicateCandidates.length ? (
@@ -548,7 +642,7 @@ export default function App() {
           <div className="section-heading">
             <div>
               <span className="section-kicker">DUPLICATAS · TRIAGEM</span>
-              <h2>Arquivos de mesmo tamanho</h2>
+              <h2>Arquivos destacados de mesmo tamanho</h2>
             </div>
             <Files size={19} />
           </div>
@@ -570,7 +664,7 @@ export default function App() {
               </div>
             ))}
           </div>
-          <p className="section-note">Isto é somente triagem por tamanho entre os arquivos destacados. Hash de conteúdo será usado antes de qualquer classificação real como duplicata.</p>
+          <p className="section-note">Ainda é triagem por tamanho entre os arquivos destacados. Confirmação por hash entra na próxima sprint.</p>
         </section>
       ) : null}
 
@@ -618,7 +712,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.2.0 · Explorer · somente leitura.</span>
+        <span>v0.2.1 · índice de sessão · somente leitura.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
