@@ -1,51 +1,102 @@
+<div align="center">
+
 # L.I.V.I.A.
 
-**Leitura Inteligente e Visualização de Informações de Armazenamento**
+### Leitura Inteligente e Visualização de Informações de Armazenamento
 
-L.I.V.I.A. é um aplicativo desktop local-first para entender o que ocupa espaço no computador sem transformar a análise em uma planilha com crise de identidade.
+**Entenda o que ocupa seu disco sem transformar o computador num campo minado.**
 
-A referência de problema é o WizTree. A proposta é preservar a utilidade de uma análise de disco rápida, mas com uma interface contemporânea, progresso visível e recomendações conservadoras.
+![Windows](https://img.shields.io/badge/Windows-desktop-5969e8?style=flat-square)
+![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
+![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
+![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.1.2--dev-5969e8?style=flat-square)
 
-## Versão atual
+</div>
 
-### v0.1.1 — Responsive Scan
+---
 
-A v0.1.1 corrige os principais problemas encontrados no primeiro teste real:
+## Visão geral
 
-- análise executada fora da thread da interface;
-- janela continua respondendo enquanto o disco é percorrido;
-- progresso ao vivo com arquivos, pastas, bytes, tempo e caminho atual;
-- cancelamento de análise;
-- consumo de memória reduzido: os maiores arquivos são mantidos em estrutura limitada em vez de guardar todos os arquivos em memória;
-- varredura fica restrita ao mesmo sistema de arquivos da unidade selecionada, evitando atravessar pontos de montagem;
-- limite maior de diretórios abertos para reduzir gargalos de travessia;
-- acesso direto ao disco do sistema;
-- interface refeita como utilitário desktop, sem hero de landing page;
-- título da janela revisado;
-- novo ícone da L.I.V.I.A.;
-- recomendações continuam somente leitura.
+A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows. Ela percorre uma pasta ou unidade, organiza o consumo por diretório e extensão, destaca os maiores arquivos e aponta itens que merecem revisão.
 
-## O que a L.I.V.I.A. mostra
+A referência de problema é o WizTree. A diferença que buscamos é uma experiência mais clara, moderna e explicável, sem sugerir que todo arquivo velho merece execução sumária.
 
-- espaço total encontrado;
-- quantidade de arquivos e pastas;
-- diretórios de primeiro nível que mais pesam;
-- distribuição por extensão;
-- maiores arquivos;
-- itens antigos, temporários, instaladores e arquivos muito grandes que merecem revisão;
-- entradas inacessíveis ignoradas com segurança.
+### O que já funciona
+
+| Recurso | Estado |
+| --- | :---: |
+| Scanner recursivo em Rust | ✅ |
+| Análise completa do disco do sistema | ✅ |
+| Interface responsiva durante o scan | ✅ |
+| Progresso ao vivo | ✅ |
+| Cancelamento | ✅ |
+| Treemap por pasta | ✅ |
+| Maiores arquivos e extensões | ✅ |
+| Recomendações somente leitura | ✅ |
+| Tema claro e escuro | 🛠️ v0.1.2 |
+| Aplicativo sem console auxiliar | 🛠️ v0.1.2 |
+| Android | 🗓️ Futuro |
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    U[Usuário] --> UI[React + TypeScript]
+    UI -->|invoke| T[Tauri 2]
+    T --> R[Core Rust]
+    R --> FS[(Sistema de arquivos)]
+    R --> AG[Agregação]
+    AG --> TR[Treemap]
+    AG --> EX[Extensões]
+    AG --> LF[Maiores arquivos]
+    AG --> RC[Recomendações]
+    TR --> UI
+    EX --> UI
+    LF --> UI
+    RC --> UI
+```
+
+## Fluxo de análise
+
+```mermaid
+sequenceDiagram
+    participant U as Usuário
+    participant UI as Interface
+    participant R as Scanner Rust
+    participant FS as Disco
+
+    U->>UI: Escolhe unidade/pasta
+    UI->>R: scan_path()
+    loop durante a varredura
+        R->>FS: lê metadados
+        R-->>UI: scan-progress
+    end
+    R-->>UI: ScanReport
+    UI-->>U: mapa, métricas e recomendações
+```
+
+## v0.1.2 — Polish & Themes
+
+Esta etapa está em desenvolvimento e responde diretamente ao teste real da v0.1.1:
+
+- [x] remover a janela de console do build de produção;
+- [x] implementar tema claro/escuro com preferência persistida;
+- [x] trocar a paleta por uma identidade menos genérica;
+- [x] redesenhar o tooltip do treemap;
+- [x] atualizar o README com diagramas Mermaid e leitura visual melhor;
+- [x] finalizar novo ícone multirresolução;
+- [x] revisão visual final seguindo o Impeccable;
+- [x] validar instalador no CI;
+- [ ] publicar v0.1.2.
 
 ## Segurança
 
-A L.I.V.I.A. **não exclui arquivos** nesta fase.
+A L.I.V.I.A. **não exclui arquivos** nesta fase. O scanner lê metadados localmente e o motor de recomendação evita sugerir itens em áreas sensíveis conhecidas do Windows.
 
-O scanner lê metadados localmente e o motor de recomendação evita sugerir itens em áreas sensíveis conhecidas do Windows.
+### SmartScreen
 
-### Windows SmartScreen
-
-As builds públicas atuais ainda **não possuem assinatura Authenticode com certificado de code signing**. Por isso o Windows pode exibir “Fornecedor desconhecido” e o SmartScreen pode pedir confirmação em instalações novas.
-
-Esse aviso é diferente de uma detecção técnica de malware, mas a experiência é ruim e a assinatura do executável está no roadmap antes da versão estável. Não será usado certificado autoassinado para maquiar o problema: a meta é assinatura confiável e verificável.
+As builds públicas atuais ainda não possuem assinatura Authenticode com certificado confiável. Por isso o Windows pode exibir **Fornecedor desconhecido**. O objetivo antes da 1.0 é distribuir builds assinadas e verificáveis, em vez de fingir que um certificado autoassinado resolve reputação.
 
 ## Stack
 
@@ -58,7 +109,7 @@ Esse aviso é diferente de uma detecção técnica de malware, mas a experiênci
 | Visualização | Recharts |
 | CI / Release | GitHub Actions |
 
-## Desenvolvimento local
+## Desenvolvimento
 
 Pré-requisitos: Node.js 20+, Rust stable, Microsoft C++ Build Tools e WebView2 Runtime.
 
@@ -67,74 +118,54 @@ npm install
 npm run tauri dev
 ```
 
-Para gerar o instalador:
+Build do instalador:
 
 ```bash
 npm run tauri build
 ```
 
-## Arquitetura
-
-```text
-L.I.V.I.A.
-├─ src/                    # Interface React
-│  ├─ components/
-│  ├─ lib/
-│  └─ App.tsx
-├─ src-tauri/
-│  ├─ src/scanner.rs       # Scanner e agregação
-│  ├─ src/lib.rs           # Comandos, estado e eventos Tauri
-│  └─ capabilities/
-├─ docs/
-│  ├─ ARCHITECTURE.md
-│  ├─ DESIGN.md
-│  └─ PRODUCT.md
-└─ .github/workflows/
-```
-
 ## Roadmap
 
-### 0.1.1 — Robustez e UX
-- [x] scanner fora da thread da interface;
-- [x] progresso ao vivo;
-- [x] cancelamento;
-- [x] memória limitada para ranking de maiores arquivos;
-- [x] visual redesenhado;
-- [x] novo ícone;
-- [x] README atualizado.
+```mermaid
+flowchart TD
+    A[v0.1.0 Fundação] --> B[v0.1.1 Scan responsivo]
+    B --> C[v0.1.2 Polish + Themes]
+    C --> D[v0.2 Scanner avançado]
+    D --> E[v0.3 Limpeza assistida]
+    E --> F[v1.0 Distribuição assinada]
+    D -. plataforma paralela .-> G[Android]
+```
 
-### 0.2 — Scanner e análise
-- [ ] benchmark em discos grandes;
-- [ ] scanner NTFS especializado usando MFT para unidades compatíveis;
-- [ ] filtros e busca;
-- [ ] duplicatas;
-- [ ] análise dedicada de caches e temporários;
-- [ ] score configurável de confiança e risco.
+### v0.2 — Scanner e análise
+- benchmark em discos grandes;
+- scanner NTFS especializado usando MFT;
+- filtros e busca;
+- duplicatas;
+- caches e temporários;
+- score configurável de confiança e risco.
 
-### 0.3 — Limpeza assistida
-- [ ] seleção múltipla;
-- [ ] prévia do espaço recuperável;
-- [ ] lixeira em vez de exclusão direta;
-- [ ] histórico das ações;
-- [ ] desfazer quando tecnicamente possível.
+### v0.3 — Limpeza assistida
+- seleção múltipla;
+- prévia do espaço recuperável;
+- lixeira em vez de exclusão direta;
+- histórico;
+- desfazer quando possível.
 
-### 1.0 — Distribuição confiável
-- [ ] assinatura Authenticode com certificado confiável;
-- [ ] atualização automática;
-- [ ] benchmarks publicados;
-- [ ] política de segurança e releases verificáveis.
+### v1.0 — Distribuição confiável
+- assinatura Authenticode;
+- atualização automática;
+- benchmarks publicados;
+- política de segurança e releases verificáveis.
 
 ### Android — futuro
-- [ ] protótipo Tauri 2 para Android;
-- [ ] adaptar a análise ao Storage Access Framework e às restrições de armazenamento do Android;
-- [ ] interface responsiva para toque;
-- [ ] compartilhar regras de classificação com o core quando a plataforma permitir.
-
-O Android fica depois de estabilizar o scanner Windows. O modelo de permissões e armazenamento é diferente, então não será uma cópia preguiçosa do executável desktop.
+- protótipo Tauri 2;
+- integração com Storage Access Framework;
+- UI adaptada para toque;
+- regras de classificação compartilhadas quando a plataforma permitir.
 
 ## Design
 
-A referência visual contínua é o [Impeccable](https://impeccable.style/). A interface deve se comportar como ferramenta técnica: hierarquia clara, linguagem concreta, densidade desktop e nenhuma decoração competindo com os dados.
+A referência contínua é o [Impeccable](https://impeccable.style/): hierarquia clara, densidade de ferramenta desktop, linguagem concreta e pouca decoração sem função.
 
 ## Licença
 
