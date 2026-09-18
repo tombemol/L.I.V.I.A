@@ -2,6 +2,8 @@
 
 <img src="docs/assets/livia-mark.svg" width="112" alt="L.I.V.I.A. logo" />
 
+<img src="public/livia-mascot.svg" width="230" alt="Lívia, a cyber assistente da L.I.V.I.A." />
+
 # L.I.V.I.A.
 
 ### Leitura Inteligente e Visualização de Informações de Armazenamento
@@ -24,6 +26,34 @@ A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows. Ela
 
 Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa a construir um **índice de sessão**. Busca, filtros e drill-down trabalham nesse índice em vez de obrigar o disco a reviver a mesma caminhada toda vez que o usuário clica numa pasta. Um conceito revolucionário conhecido como “não fazer trabalho duas vezes”.
 
+## Conheça a Lívia
+
+A interface agora tem uma personagem própria: **Lívia**, a cyber assistente que vive no canto do aplicativo e reage ao que está acontecendo sem interromper o trabalho.
+
+Ela foi desenhada para ser útil antes de ser decorativa: cabelo lilás/prateado, olhos violeta, headset tecnológico e a mesma linguagem visual roxa do app. A personalidade é divertida, irônica e direta, mas as recomendações continuam conservadoras. A personagem pode fazer piada com a pasta Downloads; a aplicação continua sem autorização para fazer besteira no disco.
+
+- **Analisando:** acompanha a varredura e mostra o progresso em linguagem humana.
+- **Explicando:** ao selecionar arquivos como DLL, PAK, ISO, SYS, ZIP ou JSON, explica o que aquele tipo normalmente representa.
+- **Julgando com carinho:** comenta arquivos muito antigos e duplicatas confirmadas.
+- **Contextual:** muda expressão para análise, sucesso, preocupação, explicação, suspeita e bagunça.
+- **Não intrusiva:** o avatar fica no canto; o balão pode ser fechado e reaparece apenas em eventos relevantes.
+- **Seguro por design:** nenhuma fala da Lívia transforma sugestão em exclusão automática.
+
+```mermaid
+flowchart LR
+    E[Evento na interface] --> C{Contexto}
+    C -->|scan| S[Lívia analisando]
+    C -->|arquivo selecionado| X[Lívia explicando]
+    C -->|duplicatas confirmadas| D[Lívia julgando]
+    C -->|erro| W[Lívia preocupada]
+    C -->|resultado limpo| H[Lívia feliz]
+    S --> B[Balão contextual opcional]
+    X --> B
+    D --> B
+    W --> B
+    H --> B
+```
+
 ## Estado atual
 
 | Recurso | Estado |
@@ -31,6 +61,8 @@ Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa
 | Scanner Rust responsivo | ✅ |
 | Progresso e cancelamento | ✅ |
 | Tema claro e escuro | ✅ |
+| Guia contextual Lívia | ✅ v0.2.3 |
+| Explicações por tipo de arquivo | ✅ v0.2.3 |
 | Treemap interativo | ✅ |
 | Pizza/Donut por pasta e extensão | ✅ v0.2.3 |
 | Preferência de visualização persistente | ✅ v0.2.3 |
@@ -106,7 +138,7 @@ flowchart LR
 
 Nenhum arquivo é removido nesta fase. A L.I.V.I.A. só prova que os conteúdos são iguais e mostra onde eles estão. Humanos continuam responsáveis pelo botão destrutivo, uma tradição que estranhamente ainda faz sentido.
 
-## v0.2.3 — Visualizações
+## v0.2.3 — Visualizações + Lívia
 
 A área de análise agora pode alternar entre visualizações sem recalcular o índice. O objetivo é permitir leitura detalhada e leitura rápida do mesmo conjunto de dados, porque aparentemente uma única forma de enxergar 191 GB de Steam não era humilhante o bastante.
 
@@ -120,6 +152,12 @@ A área de análise agora pode alternar entre visualizações sem recalcular o �
 - [x] navegação pelo índice clicando em fatias e itens de pasta;
 - [x] preferência de visualização salva localmente;
 - [x] suporte aos temas claro e escuro;
+- [x] avatar persistente da Lívia no canto da interface;
+- [x] estados visuais contextuais para análise, resultado, erro, duplicatas e seleção de arquivo;
+- [x] balões opcionais que abrem em eventos relevantes e podem ser fechados;
+- [x] explicações para tipos comuns como DLL, PAK, SYS, ISO, ZIP, JSON e bancos locais;
+- [x] comentários contextuais para arquivos antigos e duplicatas confirmadas;
+- [x] suporte responsivo e integração com os temas claro e escuro;
 - [ ] validar CI Windows e instalador;
 - [ ] publicar v0.2.3.
 
@@ -138,6 +176,8 @@ flowchart LR
     IX --> S[Busca global]
     IX --> B[Browse instantâneo]
     IX --> R[Relatórios por caminho]
+    UI --> L[Lívia contextual]
+    IX --> L
     S --> UI
     B --> UI
     R --> UI
@@ -224,7 +264,7 @@ flowchart TD
     C --> D[v0.2 Explorer]
     D --> E[v0.2.1 Índice + MFT + busca global]
     E --> F[v0.2.2 Duplicatas por hash]
-    F --> V[v0.2.3 Visualizações]
+    F --> V[v0.2.3 Visualizações + Lívia]
     V --> G[v0.3 Limpeza assistida]
     G --> H[v0.4 Snapshots + USN Journal]
     H --> I[v1.0 Distribuição assinada]
@@ -237,11 +277,13 @@ flowchart TD
 - ✅ confirmação por hash completo;
 - ✅ cálculo confiável do espaço potencialmente recuperável.
 
-### v0.2.3 — Visualizações
+### v0.2.3 — Visualizações + Lívia
 - ✅ mapa/treemap interativo;
 - ✅ gráficos de pizza/donut para pastas e extensões;
 - ✅ troca de modo sem reindexação;
-- ✅ preferências persistentes.
+- ✅ preferências persistentes;
+- ✅ Lívia como guia visual dentro do app;
+- ✅ explicações contextuais de arquivos e reações por estado.
 
 ### v0.3 — Limpeza assistida
 - seleção múltipla;
