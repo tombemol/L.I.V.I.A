@@ -15,8 +15,16 @@ export type ExtensionSummary = {
 
 export type DirectorySummary = {
   name: string;
+  path: string;
   size: number;
   fileCount: number;
+};
+
+export type DuplicateCandidate = {
+  size: number;
+  count: number;
+  potentialSavings: number;
+  files: FileEntry[];
 };
 
 export type Recommendation = {
@@ -50,5 +58,6 @@ export type ScanReport = {
   largestFiles: FileEntry[];
   extensions: ExtensionSummary[];
   directories: DirectorySummary[];
+  duplicateCandidates: DuplicateCandidate[];
   recommendations: Recommendation[];
 };

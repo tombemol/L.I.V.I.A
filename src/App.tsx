@@ -4,13 +4,18 @@ import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
   AlertTriangle,
+  ArrowUpDown,
+  ChevronRight,
   Clock3,
+  ExternalLink,
   FileArchive,
-  FileSearch,
+  Files,
+  Filter,
   FolderOpen,
   HardDrive,
   Moon,
   RefreshCw,
+  Search,
   ShieldCheck,
   Sparkles,
   Sun,
@@ -19,7 +24,7 @@ import {
 import { StorageTreemap } from "./components/StorageTreemap";
 import { ExtensionList } from "./components/ExtensionList";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
-import type { ScanProgress, ScanReport } from "./types";
+import type { FileEntry, ScanProgress, ScanReport } from "./types";
 
 function LogoGlyph() {
   return (
@@ -48,14 +53,10 @@ function Brand({ detail }: { detail?: string }) {
 }
 
 type Theme = "dark" | "light";
+type SortKey = "size" | "name" | "age" | "extension";
+type SortDirection = "asc" | "desc";
 
-function ThemeToggle({
-  theme,
-  onToggle
-}: {
-  theme: Theme;
-  onToggle: () => void;
-}) {
+function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
   const next = theme === "dark" ? "claro" : "escuro";
   return (
     <button
@@ -71,15 +72,7 @@ function ThemeToggle({
   );
 }
 
-function Metric({
-  label,
-  value,
-  detail
-}: {
-  label: string;
-  value: string;
-  detail: string;
-}) {
+function Metric({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
     <div className="metric">
       <span className="metric-label">{label}</span>
@@ -89,6 +82,32 @@ function Metric({
   );
 }
 
+function buildBreadcrumbs(path: string) {
+  const normalized = path.replaceAll("/", "\\");
+  const drive = normalized.match(/^([A-Za-z]:)\\?/)?.[1];
+
+  if (!drive) {
+    return [{ label: normalized, path: normalized }];
+  }
+
+  const root = `${drive}\\`;
+  const rest = normalized.slice(root.length).split("\\").filter(Boolean);
+  let current = root;
+  const crumbs = [{ label: root, path: root }];
+
+  for (const part of rest) {
+    current = current.endsWith("\\") ? `${current}${part}` : `${current}\\${part}`;
+    crumbs.push({ label: part, path: current });
+  }
+
+  return crumbs;
+}
+
+function formatModified(seconds: number | null) {
+  if (!seconds) return "Data indisponível";
+  return new Date(seconds * 1000).toLocaleString("pt-BR");
+}
+
 export default function App() {
   const [report, setReport] = useState<ScanReport | null>(null);
   const [busy, setBusy] = useState(false);
@@ -96,6 +115,12 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [cancelRequested, setCancelRequested] = useState(false);
   const [systemDrive, setSystemDrive] = useState("C:\\");
+  const [query, setQuery] = useState("");
+  const [extensionFilter, setExtensionFilter] = useState("all");
+  const [minSize, setMinSize] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey>("size");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem("livia-theme");
     if (saved === "light" || saved === "dark") return saved;
@@ -136,8 +161,44 @@ export default function App() {
     [report]
   );
 
+  const breadcrumbs = useMemo(() => (report ? buildBreadcrumbs(report.root) : []), [report]);
+
+  const visibleFiles = useMemo(() => {
+    if (!report) return [];
+
+    const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
+    const files = report.largestFiles.filter((file) => {
+      const matchesQuery =
+        !normalizedQuery ||
+        file.name.toLocaleLowerCase("pt-BR").includes(normalizedQuery) ||
+        file.path.toLocaleLowerCase("pt-BR").includes(normalizedQuery);
+      const matchesExtension =
+        extensionFilter === "all" || file.extension === extensionFilter;
+      const matchesSize = file.size >= minSize;
+      return matchesQuery && matchesExtension && matchesSize;
+    });
+
+    return [...files].sort((a, b) => {
+      let value = 0;
+      if (sortKey === "size") value = a.size - b.size;
+      if (sortKey === "name") value = a.name.localeCompare(b.name, "pt-BR");
+      if (sortKey === "extension") value = a.extension.localeCompare(b.extension, "pt-BR");
+      if (sortKey === "age") value = (a.ageDays ?? -1) - (b.ageDays ?? -1);
+      return sortDirection === "asc" ? value : -value;
+    });
+  }, [report, query, extensionFilter, minSize, sortKey, sortDirection]);
+
   function toggleTheme() {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }
+
+  function changeSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDirection(key === "name" || key === "extension" ? "asc" : "desc");
   }
 
   async function chooseAndScan() {
@@ -148,9 +209,7 @@ export default function App() {
       title: "Escolha uma pasta ou unidade para analisar"
     });
 
-    if (typeof selected === "string") {
-      await scan(selected);
-    }
+    if (typeof selected === "string") await scan(selected);
   }
 
   async function scan(path: string) {
@@ -159,6 +218,10 @@ export default function App() {
     setBusy(true);
     setCancelRequested(false);
     setError(null);
+    setSelectedFile(null);
+    setQuery("");
+    setExtensionFilter("all");
+    setMinSize(0);
     setProgress({
       root: path,
       filesScanned: 0,
@@ -194,6 +257,14 @@ export default function App() {
     }
   }
 
+  async function openInExplorer(path: string) {
+    try {
+      await invoke("open_in_explorer", { path });
+    } catch (reason) {
+      setError(typeof reason === "string" ? reason : "Não foi possível abrir este local.");
+    }
+  }
+
   if (busy) {
     return (
       <main className="utility-shell">
@@ -201,7 +272,7 @@ export default function App() {
           <Brand detail="Análise em andamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.1.2</span>
+            <span className="version-pill">v0.2.0</span>
           </div>
         </header>
 
@@ -209,60 +280,29 @@ export default function App() {
           <div className="scan-heading">
             <span className="section-kicker">VARREDURA LOCAL</span>
             <h1>Analisando {shortPath(progress?.root ?? "", 52)}</h1>
-            <p>
-              A análise roda fora da interface. Você pode acompanhar o trabalho ou cancelar sem
-              travar a janela.
-            </p>
+            <p>A janela continua responsiva enquanto o scanner percorre o caminho selecionado.</p>
           </div>
 
-          <div className="scan-progress" aria-label="Análise em andamento">
-            <span />
-          </div>
+          <div className="scan-progress" aria-label="Análise em andamento"><span /></div>
 
           <div className="scan-metrics">
-            <Metric
-              label="ARQUIVOS"
-              value={(progress?.filesScanned ?? 0).toLocaleString("pt-BR")}
-              detail="lidos até agora"
-            />
-            <Metric
-              label="PASTAS"
-              value={(progress?.foldersScanned ?? 0).toLocaleString("pt-BR")}
-              detail="percorridas"
-            />
-            <Metric
-              label="DADOS"
-              value={formatBytes(progress?.bytesScanned ?? 0)}
-              detail="contabilizados"
-            />
-            <Metric
-              label="TEMPO"
-              value={formatDuration(progress?.elapsedMs ?? 0)}
-              detail="decorrido"
-            />
+            <Metric label="ARQUIVOS" value={(progress?.filesScanned ?? 0).toLocaleString("pt-BR")} detail="lidos até agora" />
+            <Metric label="PASTAS" value={(progress?.foldersScanned ?? 0).toLocaleString("pt-BR")} detail="percorridas" />
+            <Metric label="DADOS" value={formatBytes(progress?.bytesScanned ?? 0)} detail="contabilizados" />
+            <Metric label="TEMPO" value={formatDuration(progress?.elapsedMs ?? 0)} detail="decorrido" />
           </div>
 
           <div className="current-path">
             <span>Agora</span>
-            <code title={progress?.currentPath}>
-              {shortPath(progress?.currentPath ?? progress?.root ?? "", 96)}
-            </code>
+            <code title={progress?.currentPath}>{shortPath(progress?.currentPath ?? progress?.root ?? "", 96)}</code>
           </div>
 
           <div className="scan-actions">
             <div className="scan-note">
               <ShieldCheck size={15} />
-              <span>
-                Somente metadados são lidos. {progress?.skippedEntries ?? 0} entradas inacessíveis
-                foram ignoradas.
-              </span>
+              <span>Somente metadados são lidos. {progress?.skippedEntries ?? 0} entradas inacessíveis foram ignoradas.</span>
             </div>
-            <button
-              className="danger-action"
-              type="button"
-              onClick={cancelScan}
-              disabled={cancelRequested}
-            >
+            <button className="danger-action" type="button" onClick={cancelScan} disabled={cancelRequested}>
               <X size={16} />
               {cancelRequested ? "Cancelando…" : "Cancelar"}
             </button>
@@ -279,7 +319,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.1.2</span>
+            <span className="version-pill">v0.2.0</span>
           </div>
         </header>
 
@@ -287,37 +327,26 @@ export default function App() {
           <div className="start-heading">
             <span className="section-kicker">ANÁLISE LOCAL · WINDOWS</span>
             <h1>Analisar armazenamento</h1>
-            <p>
-              Escolha uma unidade ou pasta. A L.I.V.I.A. mostra onde o espaço está sendo usado e
-              quais arquivos merecem revisão, sem excluir nada.
-            </p>
+            <p>Escolha uma unidade ou pasta. A L.I.V.I.A. mostra onde o espaço está sendo usado e permite explorar o resultado sem excluir nada.</p>
           </div>
 
           <div className="target-list">
             <div className="target-row">
-              <div className="target-icon">
-                <HardDrive size={20} />
-              </div>
+              <div className="target-icon"><HardDrive size={20} /></div>
               <div className="target-copy">
                 <strong>Disco do sistema</strong>
                 <span>{systemDrive} · análise completa da unidade</span>
               </div>
-              <button className="primary-action" type="button" onClick={() => scan(systemDrive)}>
-                Analisar
-              </button>
+              <button className="primary-action" type="button" onClick={() => scan(systemDrive)}>Analisar</button>
             </div>
 
             <div className="target-row">
-              <div className="target-icon">
-                <FolderOpen size={20} />
-              </div>
+              <div className="target-icon"><FolderOpen size={20} /></div>
               <div className="target-copy">
                 <strong>Outra pasta ou unidade</strong>
                 <span>Escolha um local específico pelo seletor do Windows</span>
               </div>
-              <button className="secondary-action" type="button" onClick={chooseAndScan}>
-                Escolher
-              </button>
+              <button className="secondary-action" type="button" onClick={chooseAndScan}>Escolher</button>
             </div>
           </div>
 
@@ -342,24 +371,30 @@ export default function App() {
         <div className="topbar-actions">
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <button className="secondary-action" type="button" onClick={() => scan(report.root)}>
-            <RefreshCw size={15} />
-            Reanalisar
+            <RefreshCw size={15} /> Reanalisar
           </button>
           <button className="primary-action compact" type="button" onClick={chooseAndScan}>
-            <FolderOpen size={15} />
-            Novo local
+            <FolderOpen size={15} /> Novo local
           </button>
         </div>
       </header>
+
+      <nav className="breadcrumb-bar" aria-label="Caminho analisado">
+        {breadcrumbs.map((crumb, index) => (
+          <span className="breadcrumb-part" key={crumb.path}>
+            {index ? <ChevronRight size={13} /> : null}
+            <button type="button" disabled={crumb.path === report.root} onClick={() => scan(crumb.path)}>
+              {crumb.label}
+            </button>
+          </span>
+        ))}
+      </nav>
 
       <section className="report-summary">
         <div className="report-title">
           <span className="section-kicker">RESULTADO DA ANÁLISE</span>
           <h1 title={report.root}>{shortPath(report.root, 76)}</h1>
-          <p>
-            {formatBytes(report.totalSize)} encontrados em{" "}
-            {report.fileCount.toLocaleString("pt-BR")} arquivos.
-          </p>
+          <p>{formatBytes(report.totalSize)} encontrados em {report.fileCount.toLocaleString("pt-BR")} arquivos.</p>
         </div>
 
         <div className="review-summary">
@@ -370,26 +405,10 @@ export default function App() {
       </section>
 
       <section className="metrics-strip">
-        <Metric
-          label="ARQUIVOS"
-          value={report.fileCount.toLocaleString("pt-BR")}
-          detail="itens contabilizados"
-        />
-        <Metric
-          label="PASTAS"
-          value={report.folderCount.toLocaleString("pt-BR")}
-          detail="diretórios percorridos"
-        />
-        <Metric
-          label="TEMPO"
-          value={formatDuration(report.durationMs)}
-          detail="para concluir"
-        />
-        <Metric
-          label="IGNORADOS"
-          value={report.skippedEntries.toLocaleString("pt-BR")}
-          detail="sem acesso"
-        />
+        <Metric label="ARQUIVOS" value={report.fileCount.toLocaleString("pt-BR")} detail="itens contabilizados" />
+        <Metric label="PASTAS" value={report.folderCount.toLocaleString("pt-BR")} detail="diretórios percorridos" />
+        <Metric label="TEMPO" value={formatDuration(report.durationMs)} detail="para concluir" />
+        <Metric label="IGNORADOS" value={report.skippedEntries.toLocaleString("pt-BR")} detail="sem acesso" />
       </section>
 
       <section className="analysis-grid">
@@ -401,7 +420,8 @@ export default function App() {
             </div>
             <HardDrive size={19} />
           </div>
-          <StorageTreemap data={report.directories} />
+          <StorageTreemap data={report.directories} onNavigate={(path) => path !== report.root && scan(path)} />
+          <p className="section-note">Clique em um bloco para analisar aquela pasta.</p>
         </article>
 
         <article className="surface extension-surface">
@@ -415,6 +435,144 @@ export default function App() {
           <ExtensionList data={report.extensions} />
         </article>
       </section>
+
+      <section className="surface explorer-section">
+        <div className="section-heading">
+          <div>
+            <span className="section-kicker">EXPLORADOR</span>
+            <h2>500 maiores arquivos desta análise</h2>
+          </div>
+          <Files size={19} />
+        </div>
+
+        <div className="explorer-toolbar">
+          <label className="search-control">
+            <Search size={15} />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Filtrar por nome ou caminho"
+              aria-label="Filtrar arquivos por nome ou caminho"
+            />
+          </label>
+
+          <label className="select-control">
+            <Filter size={14} />
+            <select value={extensionFilter} onChange={(event) => setExtensionFilter(event.target.value)} aria-label="Filtrar por extensão">
+              <option value="all">Todas as extensões</option>
+              {report.extensions.map((item) => (
+                <option key={item.extension} value={item.extension}>{item.extension}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="select-control">
+            <HardDrive size={14} />
+            <select value={minSize} onChange={(event) => setMinSize(Number(event.target.value))} aria-label="Tamanho mínimo">
+              <option value={0}>Qualquer tamanho</option>
+              <option value={100 * 1024 * 1024}>≥ 100 MB</option>
+              <option value={500 * 1024 * 1024}>≥ 500 MB</option>
+              <option value={1024 * 1024 * 1024}>≥ 1 GB</option>
+              <option value={5 * 1024 * 1024 * 1024}>≥ 5 GB</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="explorer-layout">
+          <div className="explorer-table">
+            <div className="explorer-row explorer-head">
+              <button type="button" onClick={() => changeSort("name")}>Arquivo <ArrowUpDown size={12} /></button>
+              <button type="button" onClick={() => changeSort("extension")}>Tipo <ArrowUpDown size={12} /></button>
+              <button type="button" onClick={() => changeSort("age")}>Modificado <ArrowUpDown size={12} /></button>
+              <button type="button" onClick={() => changeSort("size")}>Tamanho <ArrowUpDown size={12} /></button>
+            </div>
+
+            <div className="explorer-scroll">
+              {visibleFiles.slice(0, 120).map((file) => (
+                <button
+                  className={`explorer-row explorer-file${selectedFile?.path === file.path ? " selected" : ""}`}
+                  type="button"
+                  key={file.path}
+                  onClick={() => setSelectedFile(file)}
+                  onDoubleClick={() => openInExplorer(file.path)}
+                >
+                  <span className="file-name-cell">
+                    <strong>{file.name}</strong>
+                    <small title={file.path}>{shortPath(file.path, 78)}</small>
+                  </span>
+                  <span>{file.extension}</span>
+                  <span><Clock3 size={12} /> {formatAge(file.ageDays)}</span>
+                  <strong>{formatBytes(file.size)}</strong>
+                </button>
+              ))}
+
+              {!visibleFiles.length ? (
+                <div className="explorer-empty">Nenhum dos arquivos destacados corresponde aos filtros.</div>
+              ) : null}
+            </div>
+          </div>
+
+          <aside className="detail-panel">
+            {selectedFile ? (
+              <>
+                <span className="section-kicker">DETALHES</span>
+                <h3>{selectedFile.name}</h3>
+                <code title={selectedFile.path}>{selectedFile.path}</code>
+                <dl>
+                  <div><dt>Tamanho</dt><dd>{formatBytes(selectedFile.size)}</dd></div>
+                  <div><dt>Tipo</dt><dd>{selectedFile.extension}</dd></div>
+                  <div><dt>Modificado</dt><dd>{formatModified(selectedFile.modifiedSecs)}</dd></div>
+                  <div><dt>Idade</dt><dd>{formatAge(selectedFile.ageDays)}</dd></div>
+                </dl>
+                <button className="primary-action detail-action" type="button" onClick={() => openInExplorer(selectedFile.path)}>
+                  <ExternalLink size={15} /> Mostrar no Explorer
+                </button>
+              </>
+            ) : (
+              <div className="detail-empty">
+                <Files size={22} />
+                <strong>Selecione um arquivo</strong>
+                <span>Veja detalhes ou abra o local correspondente no Explorer.</span>
+              </div>
+            )}
+          </aside>
+        </div>
+
+        <p className="section-note">
+          O filtro trabalha sobre os 500 maiores arquivos mantidos em memória. Busca global completa entra junto do scanner NTFS.
+        </p>
+      </section>
+
+      {report.duplicateCandidates.length ? (
+        <section className="surface duplicates-section">
+          <div className="section-heading">
+            <div>
+              <span className="section-kicker">DUPLICATAS · TRIAGEM</span>
+              <h2>Arquivos de mesmo tamanho</h2>
+            </div>
+            <Files size={19} />
+          </div>
+
+          <div className="duplicate-list">
+            {report.duplicateCandidates.slice(0, 6).map((group) => (
+              <div className="duplicate-group" key={`${group.size}-${group.files[0]?.path ?? ""}`}>
+                <div className="duplicate-summary">
+                  <strong>{formatBytes(group.size)}</strong>
+                  <span>{group.count} arquivos · até {formatBytes(group.potentialSavings)} potencialmente repetidos</span>
+                </div>
+                <div className="duplicate-files">
+                  {group.files.slice(0, 3).map((file) => (
+                    <button type="button" key={file.path} onClick={() => setSelectedFile(file)} title={file.path}>
+                      {file.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="section-note">Isto é somente triagem por tamanho entre os arquivos destacados. Hash de conteúdo será usado antes de qualquer classificação real como duplicata.</p>
+        </section>
+      ) : null}
 
       <section className="surface recommendations">
         <div className="section-heading">
@@ -430,11 +588,7 @@ export default function App() {
             {report.recommendations.slice(0, 10).map((item) => (
               <div className="recommendation-row" key={item.path}>
                 <div className="recommendation-icon">
-                  {item.risk === "Baixo" ? (
-                    <ShieldCheck size={16} />
-                  ) : (
-                    <AlertTriangle size={16} />
-                  )}
+                  {item.risk === "Baixo" ? <ShieldCheck size={16} /> : <AlertTriangle size={16} />}
                 </div>
                 <div className="recommendation-main">
                   <strong>{item.name}</strong>
@@ -462,41 +616,9 @@ export default function App() {
         )}
       </section>
 
-      <section className="surface file-table-section">
-        <div className="section-heading">
-          <div>
-            <span className="section-kicker">MAIORES ARQUIVOS</span>
-            <h2>Arquivos que mais ocupam espaço</h2>
-          </div>
-          <FileSearch size={19} />
-        </div>
-
-        <div className="file-table" role="table" aria-label="Maiores arquivos">
-          <div className="file-row file-head" role="row">
-            <span>Arquivo</span>
-            <span>Tipo</span>
-            <span>Modificado</span>
-            <span>Tamanho</span>
-          </div>
-          {report.largestFiles.slice(0, 15).map((file) => (
-            <div className="file-row" role="row" key={file.path}>
-              <span className="file-name-cell">
-                <strong>{file.name}</strong>
-                <small title={file.path}>{shortPath(file.path, 72)}</small>
-              </span>
-              <span>{file.extension}</span>
-              <span>
-                <Clock3 size={13} /> {formatAge(file.ageDays)}
-              </span>
-              <strong>{formatBytes(file.size)}</strong>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.1.2 · somente leitura · nenhum arquivo é excluído.</span>
+        <span>v0.2.0 · Explorer · somente leitura.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
