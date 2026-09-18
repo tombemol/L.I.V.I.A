@@ -145,24 +145,6 @@ export function LiviaAssistant({
       };
     }
 
-    if (lastCleanup?.files) {
-      return {
-        mood: "celebrating",
-        title: "Limpeza concluída",
-        message: `${lastCleanup.files.toLocaleString("pt-BR")} arquivo(s) foram para a Lixeira, liberando até ${formatBytes(lastCleanup.bytes)}. Nada de exclusão permanente escondida atrás de botão bonito.`,
-        key: `cleanup-done:${lastCleanup.files}:${lastCleanup.bytes}`
-      };
-    }
-
-    if (cleanupCount > 0) {
-      return {
-        mood: "judging",
-        title: "Bandeja de limpeza",
-        message: `Você separou ${cleanupCount.toLocaleString("pt-BR")} arquivo(s). Eu só movo depois da revisão e de uma segunda confirmação. Sim, duas. Confiança é ótima; backups também.`,
-        key: `cleanup-selected:${cleanupCount}`
-      };
-    }
-
     if (duplicateBusy) {
       return {
         mood: "scanning",
@@ -172,12 +154,30 @@ export function LiviaAssistant({
       };
     }
 
+    if (lastCleanup?.files) {
+      return {
+        mood: "celebrating",
+        title: "Limpeza concluída",
+        message: `${lastCleanup.files.toLocaleString("pt-BR")} arquivo(s) foram para a Lixeira, liberando até ${formatBytes(lastCleanup.bytes)}. Nada de exclusão permanente escondida atrás de botão bonito.`,
+        key: `cleanup-done:${lastCleanup.files}:${lastCleanup.bytes}`
+      };
+    }
+
     if (selectedFile) {
       return {
         mood: "explaining",
         title: selectedFile.name,
         message: fileComment(selectedFile),
         key: `file:${selectedFile.path}`
+      };
+    }
+
+    if (cleanupCount > 0) {
+      return {
+        mood: "judging",
+        title: "Bandeja de limpeza",
+        message: `Você separou ${cleanupCount.toLocaleString("pt-BR")} arquivo(s). Eu só movo depois da revisão e de uma segunda confirmação. Sim, duas. Confiança é ótima; backups também.`,
+        key: `cleanup-selected:${cleanupCount}`
       };
     }
 
