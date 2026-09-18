@@ -141,6 +141,13 @@ export type CleanupHistoryEntry = {
 };
 
 
+export type SnapshotBucket = {
+  label: string;
+  path: string | null;
+  size: number;
+  count: number;
+};
+
 export type StorageSnapshot = {
   id: string;
   createdAtSecs: number;
@@ -150,6 +157,8 @@ export type StorageSnapshot = {
   folderCount: number;
   indexedFiles: number;
   engineLabel: string;
+  directories: SnapshotBucket[];
+  extensions: SnapshotBucket[];
 };
 
 export type CachedIndexResponse = {

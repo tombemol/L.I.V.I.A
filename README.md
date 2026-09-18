@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.4.1--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.5.0--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -96,6 +96,8 @@ flowchart LR
 | Índice persistente entre execuções | ✅ v0.4.0 |
 | Snapshots locais do armazenamento | ✅ v0.4.0 |
 | Atualização incremental via USN Journal | ✅ v0.4.1 |
+| Histórico visual do armazenamento | ✅ v0.5.0 |
+| Crescimento por pasta e extensão | ✅ v0.5.0 |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -327,6 +329,38 @@ flowchart LR
     F --> S
 ```
 
+## v0.5.0 — Histórico visual do armazenamento
+
+Os snapshots deixaram de ser apenas números guardados em algum JSON melancólico. A L.I.V.I.A. agora transforma a memória do disco em uma **linha do tempo visual**, com comparação de crescimento por pasta e extensão.
+
+### Entregas
+
+- [x] gráfico temporal de espaço ocupado;
+- [x] filtros de 7 dias, 30 dias e histórico completo;
+- [x] comparação entre o snapshot atual e o início do período;
+- [x] variação de quantidade de arquivos;
+- [x] breakdown resumido de até 20 pastas por snapshot;
+- [x] breakdown resumido de até 20 extensões por snapshot;
+- [x] ranking das pastas que mais cresceram ou diminuíram;
+- [x] ranking dos tipos de arquivo que mais mudaram;
+- [x] compatibilidade com snapshots antigos sem breakdown;
+- [x] Lívia comenta crescimento ou redução desde a leitura anterior.
+
+```mermaid
+flowchart LR
+    S[Snapshots locais] --> P[Filtro de período]
+    P --> T[Linha do tempo]
+    P --> B[Snapshot base]
+    P --> A[Snapshot atual]
+    B --> C[Comparação]
+    A --> C
+    C --> F[Crescimento por pasta]
+    C --> E[Crescimento por extensão]
+    C --> L[Insight da Lívia]
+```
+
+Snapshots anteriores à v0.5 continuam válidos. Eles aparecem no gráfico de tamanho total, mas só novos snapshots possuem breakdown detalhado por pasta e extensão. Inventar dados históricos que nunca foram coletados seria muito eficiente, pena que também seria mentira.
+
 ## Arquitetura
 
 ```mermaid
@@ -439,6 +473,7 @@ flowchart TD
     G --> U[v0.3.1 Undo seguro]
     U --> M[v0.4.0 Memória persistente]
     M --> H[v0.4.1 USN Journal]
+    H --> V5[v0.5.0 Histórico visual]
     H --> I[v1.0 Distribuição assinada]
     E -. plataforma paralela .-> J[Android]
 ```

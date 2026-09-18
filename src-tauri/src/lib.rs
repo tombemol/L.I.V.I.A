@@ -32,6 +32,15 @@ struct PersistedIndexEnvelope {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+struct SnapshotBucket {
+    label: String,
+    path: Option<String>,
+    size: u64,
+    count: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 struct StorageSnapshot {
     id: String,
     created_at_secs: u64,
@@ -41,6 +50,10 @@ struct StorageSnapshot {
     folder_count: u64,
     indexed_files: usize,
     engine_label: String,
+    #[serde(default)]
+    directories: Vec<SnapshotBucket>,
+    #[serde(default)]
+    extensions: Vec<SnapshotBucket>,
 }
 
 #[derive(Debug, Serialize)]
@@ -167,7 +180,7 @@ async fn load_cached_index(
 
         let report = scanner::browse_index(&envelope.index, envelope.index.root.clone())
             .map_err(|error| format!("O índice persistente não pôde ser reconstruído: {error}"))?;
-        let snapshots = load_snapshot_history(&envelope.index.root, 12)?;
+        let snapshots = load_snapshot_history(&envelope.index.root, SNAPSHOT_LIMIT)?;
 
         let mut guard = index_state
             .write()
@@ -737,6 +750,28 @@ fn record_snapshot(report: &ScanReport) -> Result<(), String> {
             folder_count: report.folder_count,
             indexed_files: report.indexed_files,
             engine_label: report.engine.label.clone(),
+            directories: report
+                .directories
+                .iter()
+                .take(20)
+                .map(|item| SnapshotBucket {
+                    label: item.name.clone(),
+                    path: Some(item.path.clone()),
+                    size: item.size,
+                    count: item.file_count,
+                })
+                .collect(),
+            extensions: report
+                .extensions
+                .iter()
+                .take(20)
+                .map(|item| SnapshotBucket {
+                    label: item.extension.clone(),
+                    path: None,
+                    size: item.size,
+                    count: item.count,
+                })
+                .collect(),
         },
     );
 
