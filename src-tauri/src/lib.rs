@@ -221,7 +221,7 @@ async fn refresh_index(
 
     let task = tauri::async_runtime::spawn_blocking(move || {
         match scanner::refresh_usn(&current) {
-            Ok(bundle) => Ok((
+            Ok(bundle) => Ok::<_, String>((
                 bundle.report,
                 bundle.index,
                 true,
