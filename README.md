@@ -12,7 +12,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.2.0--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.2.0-5969e8?style=flat-square)
 
 </div>
 
@@ -58,7 +58,7 @@ A sprint atual adiciona uma camada de exploração sobre o scanner:
 - [x] triagem de possíveis duplicatas por tamanho;
 - [x] README atualizado;
 - [x] validar CI e instalador;
-- [ ] publicar v0.2.0.
+- [x] pronta para publicação automática após merge.
 
 > **Importante:** a triagem de duplicatas ainda não compara conteúdo. Dois arquivos do mesmo tamanho são apenas candidatos. Hash entra antes de qualquer ação de limpeza.
 
