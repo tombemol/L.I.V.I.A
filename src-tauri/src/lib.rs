@@ -280,7 +280,10 @@ fn is_protected_path(target: &Path, current_exe: Option<&Path>, windows_dir: Opt
     }
 
     if let Some(windows) = windows_dir {
-        let windows = windows.to_string_lossy().trim_end_matches(['\\', '/']).to_ascii_lowercase();
+        let windows = windows
+            .to_string_lossy()
+            .trim_end_matches(|value| value == '\\' || value == '/')
+            .to_ascii_lowercase();
         if normalized == windows
             || normalized.starts_with(&format!("{windows}\\"))
             || normalized.starts_with(&format!("{windows}/"))
