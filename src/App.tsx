@@ -400,7 +400,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.2.2</span>
+            <span className="version-pill">v0.2.3</span>
           </div>
         </header>
 
@@ -453,7 +453,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.2.2</span>
+            <span className="version-pill">v0.2.3</span>
           </div>
         </header>
 
@@ -968,7 +968,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.2.2 · índice de sessão · somente leitura.</span>
+        <span>v0.2.3 · índice de sessão · somente leitura.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}

@@ -46,6 +46,8 @@ jobs:
             - navegação instantânea pelo índice e aceleração NTFS/MFT quando disponível;
             - confirmação de duplicatas em duas etapas com BLAKE3;
             - cálculo do espaço potencialmente recuperável por duplicatas confirmadas;
+            - modos Mapa/Pizza para pastas e Lista/Pizza para extensões;
+            - preferências de visualização persistentes;
             - interface desktop com temas claro e escuro;
             - análise, hashing e recomendações continuam somente leitura.
 

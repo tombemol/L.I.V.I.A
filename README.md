@@ -12,7 +12,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.2.2--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.2.3--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -32,6 +32,8 @@ Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa
 | Progresso e cancelamento | ✅ |
 | Tema claro e escuro | ✅ |
 | Treemap interativo | ✅ |
+| Pizza/Donut por pasta e extensão | ✅ v0.2.3 |
+| Preferência de visualização persistente | ✅ v0.2.3 |
 | Breadcrumb / drill-down | ✅ |
 | Índice completo da sessão | ✅ v0.2.1 |
 | Busca global no índice | ✅ v0.2.1 |
@@ -86,8 +88,8 @@ A verificação de duplicatas agora acontece **sob demanda**. A indexação inic
 - [x] mostrar progresso da verificação na interface;
 - [x] mostrar grupos confirmados e espaço potencialmente recuperável;
 - [x] manter a operação estritamente somente leitura;
-- [ ] validar CI Windows e instalador;
-- [ ] publicar v0.2.2.
+- [x] validar CI Windows e instalador;
+- [x] publicar v0.2.2.
 
 ### Fluxo da confirmação
 
@@ -103,6 +105,23 @@ flowchart LR
 ```
 
 Nenhum arquivo é removido nesta fase. A L.I.V.I.A. só prova que os conteúdos são iguais e mostra onde eles estão. Humanos continuam responsáveis pelo botão destrutivo, uma tradição que estranhamente ainda faz sentido.
+
+## v0.2.3 — Visualizações
+
+A área de análise agora pode alternar entre visualizações sem recalcular o índice. O objetivo é permitir leitura detalhada e leitura rápida do mesmo conjunto de dados, porque aparentemente uma única forma de enxergar 191 GB de Steam não era humilhante o bastante.
+
+### Entregas
+
+- [x] alternância **Mapa / Pizza** para distribuição por pasta;
+- [x] alternância **Lista / Pizza** para extensões;
+- [x] gráfico donut responsivo usando Recharts;
+- [x] legenda com porcentagem, tamanho e contagem de arquivos;
+- [x] agrupamento de categorias menores em **Outros**;
+- [x] navegação pelo índice clicando em fatias e itens de pasta;
+- [x] preferência de visualização salva localmente;
+- [x] suporte aos temas claro e escuro;
+- [ ] validar CI Windows e instalador;
+- [ ] publicar v0.2.3.
 
 ## Arquitetura
 
@@ -205,7 +224,8 @@ flowchart TD
     C --> D[v0.2 Explorer]
     D --> E[v0.2.1 Índice + MFT + busca global]
     E --> F[v0.2.2 Duplicatas por hash]
-    F --> G[v0.3 Limpeza assistida]
+    F --> V[v0.2.3 Visualizações]
+    V --> G[v0.3 Limpeza assistida]
     G --> H[v0.4 Snapshots + USN Journal]
     H --> I[v1.0 Distribuição assinada]
     E -. plataforma paralela .-> J[Android]
@@ -216,6 +236,12 @@ flowchart TD
 - ✅ hash rápido parcial BLAKE3;
 - ✅ confirmação por hash completo;
 - ✅ cálculo confiável do espaço potencialmente recuperável.
+
+### v0.2.3 — Visualizações
+- ✅ mapa/treemap interativo;
+- ✅ gráficos de pizza/donut para pastas e extensões;
+- ✅ troca de modo sem reindexação;
+- ✅ preferências persistentes.
 
 ### v0.3 — Limpeza assistida
 - seleção múltipla;
