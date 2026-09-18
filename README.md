@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.4.0--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.4.1--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -95,6 +95,7 @@ flowchart LR
 | Seleção assistida de duplicatas | ✅ v0.3.1 |
 | Índice persistente entre execuções | ✅ v0.4.0 |
 | Snapshots locais do armazenamento | ✅ v0.4.0 |
+| Atualização incremental via USN Journal | ✅ v0.4.1 |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -291,6 +292,39 @@ flowchart LR
     A --> R[Restaurar índice sem varrer]
     H --> T[Mini timeline]
     R --> B[Busca / drill-down / limpeza]
+```
+
+## v0.4.1 — USN Journal + atualização incremental
+
+Em unidades NTFS elegíveis, a L.I.V.I.A. agora salva um **checkpoint do USN Journal** junto do índice. Ao clicar em **Atualizar índice**, ela tenta ler apenas as alterações ocorridas desde esse checkpoint.
+
+Se o journal tiver sido recriado, o checkpoint tiver expirado, houver mudança estrutural de diretório, o volume não permitir acesso ou o lote de mudanças ficar grande demais, a L.I.V.I.A. abandona a rota incremental e **reconstrói o índice completo automaticamente**. Nada de insistir numa otimização quando a premissa deixou de ser confiável. Seria muito humano.
+
+### Entregas
+
+- [x] checkpoint `journalId + nextUsn` salvo no índice persistente;
+- [x] leitura incremental iniciando no último USN conhecido;
+- [x] atualização/remoção apenas dos arquivos apontados pelo journal;
+- [x] engine `NTFS / USN incremental` visível no relatório;
+- [x] fallback automático para indexação completa;
+- [x] fallback em alterações estruturais de diretório;
+- [x] fallback quando o checkpoint sai da janela válida;
+- [x] limite de segurança para lotes excessivos de eventos;
+- [x] novo snapshot após cada atualização;
+- [x] Lívia explica se a atualização foi incremental ou completa.
+
+```mermaid
+flowchart LR
+    P[Índice persistente + checkpoint] --> Q[Consultar USN Journal]
+    Q --> V{Checkpoint válido?}
+    V -->|não| F[Reindexação completa]
+    V -->|sim| C[Ler somente mudanças]
+    C --> D{Mudança estrutural / ambígua?}
+    D -->|sim| F
+    D -->|não| U[Atualizar arquivos afetados]
+    U --> N[Novo checkpoint]
+    N --> S[Novo snapshot]
+    F --> S
 ```
 
 ## Arquitetura
