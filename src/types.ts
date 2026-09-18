@@ -30,6 +30,16 @@ export type Recommendation = {
   confidence: number;
 };
 
+export type ScanProgress = {
+  root: string;
+  filesScanned: number;
+  foldersScanned: number;
+  skippedEntries: number;
+  bytesScanned: number;
+  elapsedMs: number;
+  currentPath: string;
+};
+
 export type ScanReport = {
   root: string;
   totalSize: number;

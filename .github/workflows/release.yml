@@ -40,14 +40,16 @@ jobs:
           tagName: v__VERSION__
           releaseName: "L.I.V.I.A. v__VERSION__"
           releaseBody: |
-            Primeira versão funcional da L.I.V.I.A.
+            L.I.V.I.A. v__VERSION__
 
-            - análise local de pasta ou unidade;
-            - scanner em Rust;
-            - treemap e distribuição por extensão;
-            - maiores arquivos;
-            - recomendações conservadoras;
-            - nenhum arquivo é excluído nesta versão.
+            - scanner executado fora da thread da interface;
+            - progresso ao vivo e cancelamento;
+            - menor uso de memória em análises grandes;
+            - interface desktop redesenhada;
+            - novo ícone;
+            - análise e recomendações continuam somente leitura.
+
+            Observação: esta pré-release ainda não possui assinatura Authenticode. O Windows SmartScreen pode exibir "Fornecedor desconhecido" até a adoção de um certificado de code signing confiável.
           releaseDraft: false
           prerelease: true
           args: --bundles nsis
