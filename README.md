@@ -2,7 +2,7 @@
 
 <img src="docs/assets/livia-mark.svg" width="112" alt="L.I.V.I.A. logo" />
 
-<img src="public/livia/livia-sprites.webp" width="720" alt="Lívia chibi em seis expressões: normal, feliz, explicando, julgando, preocupada e escaneando." />
+<img src="public/livia/livia-sprites.webp" width="480" alt="Lívia chibi em seis expressões: normal, feliz, explicando, julgando, preocupada e escaneando." />
 
 # L.I.V.I.A.
 
