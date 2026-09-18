@@ -983,6 +983,28 @@ button:focus-visible {
   font-size: 11px;
 }
 
+.recommendation-action {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 8px;
+}
+
+.recommendation-action:hover,
+.recommendation-action.selected {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-raised));
+}
+
 .calm-empty {
   margin-top: 12px;
   min-height: 72px;
