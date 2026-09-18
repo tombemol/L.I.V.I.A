@@ -17,8 +17,14 @@
   --accent: #8b9cff;
   --accent-hover: #a7b2ff;
   --accent-deep: #596bd9;
+  --accent-contrast: #11131a;
   --warning: #e3ad72;
   --danger: #ef9f91;
+  --danger-bg: #1b1415;
+  --danger-bg-hover: #26191b;
+  --danger-border: #5a383c;
+  --danger-border-hover: #7a4a50;
+  --danger-text: #f1aaa3;
   --logo-bg: #11141b;
   --logo-line: #343a48;
   --track: #20242c;
@@ -51,8 +57,14 @@
   --accent: #5969e8;
   --accent-hover: #4657db;
   --accent-deep: #3f50c9;
+  --accent-contrast: #ffffff;
   --warning: #a5672c;
   --danger: #b94b3f;
+  --danger-bg: #fff4f2;
+  --danger-bg-hover: #ffe9e5;
+  --danger-border: #e5b0a9;
+  --danger-border-hover: #d48d84;
+  --danger-text: #9f3f35;
   --logo-bg: #f8f9fb;
   --logo-line: #cfd4df;
   --track: #e2e5eb;
@@ -193,16 +205,8 @@ button:focus-visible {
   opacity: 0.55;
 }
 
-.logo-cell-b {
-  left: 18px;
-}
-
-.logo-cell-c {
-  left: 24px;
-}
-
 .version-pill {
-  color: #6f808c;
+  color: var(--muted);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
@@ -221,7 +225,7 @@ button:focus-visible {
 
 .section-kicker,
 .metric-label {
-  color: #7f99a5;
+  color: var(--muted);
   font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.14em;
@@ -268,9 +272,9 @@ button:focus-visible {
   height: 36px;
   display: grid;
   place-items: center;
-  border: 1px solid #2d3d47;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  color: #88a6b2;
+  color: var(--muted-strong);
   background: var(--surface-raised);
 }
 
@@ -308,7 +312,7 @@ button:focus-visible {
 
 .primary-action {
   border: 1px solid var(--accent);
-  color: #071015;
+  color: var(--accent-contrast);
   background: var(--accent);
 }
 
@@ -329,19 +333,19 @@ button:focus-visible {
 }
 
 .secondary-action:hover {
-  border-color: #354651;
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
   background: var(--surface-raised);
 }
 
 .danger-action {
-  border: 1px solid #54362f;
-  color: #efb3a6;
-  background: #1a1210;
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+  background: var(--danger-bg);
 }
 
 .danger-action:hover {
-  background: #241714;
-  border-color: #71483d;
+  background: var(--danger-bg-hover);
+  border-color: var(--danger-border-hover);
 }
 
 .primary-action:active,
@@ -362,7 +366,7 @@ button:focus-visible {
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  color: #7d929d;
+  color: var(--muted);
 }
 
 .privacy-line > div {
@@ -371,7 +375,7 @@ button:focus-visible {
 }
 
 .privacy-line strong {
-  color: #a8b7bf;
+  color: var(--muted-strong);
   font-size: 11px;
 }
 
@@ -381,9 +385,9 @@ button:focus-visible {
 
 .error-banner,
 .floating-error {
-  color: #efb8aa;
-  background: #211512;
-  border: 1px solid #4a3029;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   border-radius: 6px;
   padding: 11px 13px;
   font-size: 11px;
@@ -402,7 +406,7 @@ button:focus-visible {
   height: 4px;
   margin-top: 28px;
   overflow: hidden;
-  background: #172028;
+  background: var(--track);
   border-radius: 999px;
 }
 
@@ -474,7 +478,7 @@ button:focus-visible {
 }
 
 .current-path > span {
-  color: #71838e;
+  color: var(--muted);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -485,7 +489,7 @@ button:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #b9c5ca;
+  color: var(--muted-strong);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 10px;
 }
@@ -594,7 +598,7 @@ button:focus-visible {
 
 .section-heading > svg {
   margin-top: 1px;
-  color: #667d88;
+  color: var(--muted);
 }
 
 .treemap-wrap {
@@ -681,8 +685,8 @@ button:focus-visible {
   height: 28px;
   display: grid;
   place-items: center;
-  color: #88b9c4;
-  border: 1px solid #2c3b44;
+  color: var(--accent);
+  border: 1px solid var(--line);
   border-radius: 5px;
 }
 
@@ -715,7 +719,7 @@ button:focus-visible {
 }
 
 .recommendation-reason > span {
-  color: #c1cdd2;
+  color: var(--muted-strong);
   font-size: 10px;
 }
 
@@ -734,7 +738,7 @@ button:focus-visible {
   align-items: center;
   gap: 11px;
   border-top: 1px solid var(--line);
-  color: #86b8c3;
+  color: var(--accent);
 }
 
 .calm-empty > div {
@@ -782,7 +786,7 @@ button:focus-visible {
 
 .file-head {
   min-height: 32px;
-  color: #6b7d88;
+  color: var(--muted);
   font-size: 8px;
   font-weight: 760;
   letter-spacing: 0.12em;
@@ -807,7 +811,7 @@ button:focus-visible {
   justify-content: flex-end;
   gap: 7px;
   padding: 16px 2px 0;
-  color: #5e707b;
+  color: var(--muted);
   font-size: 9px;
 }
 
@@ -816,7 +820,7 @@ button:focus-visible {
   right: 24px;
   bottom: 24px;
   max-width: 420px;
-  box-shadow: 0 12px 36px #0008;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28);
 }
 
 @media (max-width: 980px) {
@@ -916,11 +920,6 @@ button:focus-visible {
 .treemap-tooltip small {
   color: var(--tooltip-muted);
   font-size: 9px;
-}
-
-:root[data-theme="light"] .section-kicker,
-:root[data-theme="light"] .metric-label {
-  color: #667184;
 }
 
 :root[data-theme="light"] .current-path code,
