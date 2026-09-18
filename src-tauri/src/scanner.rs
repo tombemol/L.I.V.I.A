@@ -1,16 +1,24 @@
 use serde::Serialize;
 use std::{
-    collections::HashMap,
+    cmp::{Ordering as CmpOrdering, Reverse},
+    collections::{BinaryHeap, HashMap},
     fs,
     path::{Path, PathBuf},
+    sync::{
+        atomic::{AtomicBool, Ordering as AtomicOrdering},
+        Arc,
+    },
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 use walkdir::WalkDir;
 
 const ONE_MB: u64 = 1024 * 1024;
 const ONE_GB: u64 = 1024 * ONE_MB;
+const LARGEST_LIMIT: usize = 40;
+const RECOMMENDATION_LIMIT: usize = 50;
+const PROGRESS_INTERVAL_MS: u128 = 120;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FileEntry {
     pub path: String,
@@ -65,15 +73,56 @@ pub struct ScanReport {
     pub recommendations: Vec<Recommendation>,
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanProgress {
+    pub root: String,
+    pub files_scanned: u64,
+    pub folders_scanned: u64,
+    pub skipped_entries: u64,
+    pub bytes_scanned: u64,
+    pub elapsed_ms: u128,
+    pub current_path: String,
+}
+
 #[derive(Default)]
 struct Bucket {
     size: u64,
     count: u64,
 }
 
-pub fn scan(input: String) -> Result<ScanReport, String> {
+#[derive(Eq, PartialEq)]
+struct RankedFile {
+    size: u64,
+    ordinal: u64,
+    file: FileEntry,
+}
+
+impl Ord for RankedFile {
+    fn cmp(&self, other: &Self) -> CmpOrdering {
+        self.size
+            .cmp(&other.size)
+            .then_with(|| self.ordinal.cmp(&other.ordinal))
+    }
+}
+
+impl PartialOrd for RankedFile {
+    fn partial_cmp(&self, other: &Self) -> Option<CmpOrdering> {
+        Some(self.cmp(other))
+    }
+}
+
+pub fn scan<F>(
+    input: String,
+    cancel: Arc<AtomicBool>,
+    mut on_progress: F,
+) -> Result<ScanReport, String>
+where
+    F: FnMut(ScanProgress),
+{
     let started = Instant::now();
-    let root = PathBuf::from(input);
+    let now = SystemTime::now();
+    let root = PathBuf::from(&input);
 
     if !root.exists() {
         return Err("O caminho selecionado não existe.".to_string());
@@ -83,17 +132,29 @@ pub fn scan(input: String) -> Result<ScanReport, String> {
         return Err("Selecione uma pasta ou unidade, não um arquivo isolado.".to_string());
     }
 
-    let root = fs::canonicalize(&root).unwrap_or(root);
+    let display_root = root.to_string_lossy().to_string();
     let mut total_size = 0_u64;
     let mut file_count = 0_u64;
     let mut folder_count = 0_u64;
     let mut skipped_entries = 0_u64;
-    let mut files = Vec::<FileEntry>::new();
+    let mut ordinal = 0_u64;
+    let mut largest = BinaryHeap::<Reverse<RankedFile>>::new();
     let mut extension_buckets = HashMap::<String, Bucket>::new();
     let mut directory_buckets = HashMap::<String, Bucket>::new();
     let mut recommendations = Vec::<Recommendation>::new();
+    let mut last_progress = Instant::now();
 
-    for entry in WalkDir::new(&root).follow_links(false).into_iter() {
+    let walker = WalkDir::new(&root)
+        .follow_links(false)
+        .same_file_system(true)
+        .max_open(64)
+        .into_iter();
+
+    for entry in walker {
+        if cancel.load(AtomicOrdering::Relaxed) {
+            return Err("Análise cancelada.".to_string());
+        }
+
         let entry = match entry {
             Ok(entry) => entry,
             Err(_) => {
@@ -106,6 +167,18 @@ pub fn scan(input: String) -> Result<ScanReport, String> {
             if entry.path() != root {
                 folder_count += 1;
             }
+
+            emit_progress_if_needed(
+                &mut on_progress,
+                &display_root,
+                file_count,
+                folder_count,
+                skipped_entries,
+                total_size,
+                started,
+                &mut last_progress,
+                entry.path(),
+            );
             continue;
         }
 
@@ -125,18 +198,15 @@ pub fn scan(input: String) -> Result<ScanReport, String> {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
         let extension = normalized_extension(path);
-        let modified_secs = metadata
-            .modified()
-            .ok()
-            .and_then(|modified| modified.duration_since(UNIX_EPOCH).ok())
+        let modified = metadata.modified().ok();
+        let modified_secs = modified
+            .and_then(|value| value.duration_since(UNIX_EPOCH).ok())
             .map(|duration| duration.as_secs());
-        let age_days = metadata
-            .modified()
-            .ok()
-            .and_then(age_in_days);
+        let age_days = modified.and_then(|value| age_in_days(value, now));
 
         total_size = total_size.saturating_add(size);
         file_count += 1;
+        ordinal += 1;
 
         let extension_bucket = extension_buckets.entry(extension.clone()).or_default();
         extension_bucket.size = extension_bucket.size.saturating_add(size);
@@ -156,22 +226,46 @@ pub fn scan(input: String) -> Result<ScanReport, String> {
             age_days,
         };
 
+        keep_largest(&mut largest, file.clone(), ordinal);
+
         if let Some(recommendation) = recommend(&file) {
             recommendations.push(recommendation);
+
+            if recommendations.len() > RECOMMENDATION_LIMIT * 4 {
+                sort_and_trim_recommendations(&mut recommendations);
+            }
         }
 
-        files.push(file);
+        emit_progress_if_needed(
+            &mut on_progress,
+            &display_root,
+            file_count,
+            folder_count,
+            skipped_entries,
+            total_size,
+            started,
+            &mut last_progress,
+            path,
+        );
     }
 
-    files.sort_by(|a, b| b.size.cmp(&a.size));
-    files.truncate(40);
-
-    recommendations.sort_by(|a, b| {
-        b.confidence
-            .cmp(&a.confidence)
-            .then_with(|| b.size.cmp(&a.size))
+    on_progress(ScanProgress {
+        root: display_root.clone(),
+        files_scanned: file_count,
+        folders_scanned: folder_count,
+        skipped_entries,
+        bytes_scanned: total_size,
+        elapsed_ms: started.elapsed().as_millis(),
+        current_path: display_root.clone(),
     });
-    recommendations.truncate(50);
+
+    let mut largest_files: Vec<_> = largest
+        .into_iter()
+        .map(|Reverse(item)| item.file)
+        .collect();
+    largest_files.sort_by(|a, b| b.size.cmp(&a.size));
+
+    sort_and_trim_recommendations(&mut recommendations);
 
     let mut extensions: Vec<_> = extension_buckets
         .into_iter()
@@ -195,17 +289,84 @@ pub fn scan(input: String) -> Result<ScanReport, String> {
     directories.sort_by(|a, b| b.size.cmp(&a.size));
 
     Ok(ScanReport {
-        root: root.to_string_lossy().to_string(),
+        root: display_root,
         total_size,
         file_count,
         folder_count,
         skipped_entries,
         duration_ms: started.elapsed().as_millis(),
-        largest_files: files,
+        largest_files,
         extensions,
         directories,
         recommendations,
     })
+}
+
+fn keep_largest(
+    heap: &mut BinaryHeap<Reverse<RankedFile>>,
+    file: FileEntry,
+    ordinal: u64,
+) {
+    let item = RankedFile {
+        size: file.size,
+        ordinal,
+        file,
+    };
+
+    if heap.len() < LARGEST_LIMIT {
+        heap.push(Reverse(item));
+        return;
+    }
+
+    let should_replace = heap
+        .peek()
+        .map(|Reverse(current)| item.size > current.size)
+        .unwrap_or(true);
+
+    if should_replace {
+        heap.pop();
+        heap.push(Reverse(item));
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn emit_progress_if_needed<F>(
+    on_progress: &mut F,
+    root: &str,
+    file_count: u64,
+    folder_count: u64,
+    skipped_entries: u64,
+    total_size: u64,
+    started: Instant,
+    last_progress: &mut Instant,
+    current_path: &Path,
+) where
+    F: FnMut(ScanProgress),
+{
+    if last_progress.elapsed().as_millis() < PROGRESS_INTERVAL_MS {
+        return;
+    }
+
+    on_progress(ScanProgress {
+        root: root.to_string(),
+        files_scanned: file_count,
+        folders_scanned: folder_count,
+        skipped_entries,
+        bytes_scanned: total_size,
+        elapsed_ms: started.elapsed().as_millis(),
+        current_path: current_path.to_string_lossy().to_string(),
+    });
+
+    *last_progress = Instant::now();
+}
+
+fn sort_and_trim_recommendations(recommendations: &mut Vec<Recommendation>) {
+    recommendations.sort_by(|a, b| {
+        b.confidence
+            .cmp(&a.confidence)
+            .then_with(|| b.size.cmp(&a.size))
+    });
+    recommendations.truncate(RECOMMENDATION_LIMIT);
 }
 
 fn normalized_extension(path: &Path) -> String {
@@ -215,9 +376,8 @@ fn normalized_extension(path: &Path) -> String {
     }
 }
 
-fn age_in_days(modified: SystemTime) -> Option<u64> {
-    SystemTime::now()
-        .duration_since(modified)
+fn age_in_days(modified: SystemTime, now: SystemTime) -> Option<u64> {
+    now.duration_since(modified)
         .ok()
         .map(|duration| duration.as_secs() / 86_400)
 }
@@ -252,14 +412,20 @@ fn recommend(file: &FileEntry) -> Option<Recommendation> {
                 "Baixo",
                 92,
             )
-        } else if matches!(extension, ".zip" | ".rar" | ".7z" | ".iso") && age >= 120 && file.size >= 250 * ONE_MB {
+        } else if matches!(extension, ".zip" | ".rar" | ".7z" | ".iso")
+            && age >= 120
+            && file.size >= 250 * ONE_MB
+        {
             (
                 "Arquivo compactado",
                 "Arquivo grande, compactado e antigo. Confirme se ainda precisa dele.",
                 "Revisar",
                 78,
             )
-        } else if matches!(extension, ".exe" | ".msi" | ".msix") && age >= 180 && file.size >= 100 * ONE_MB {
+        } else if matches!(extension, ".exe" | ".msi" | ".msix")
+            && age >= 180
+            && file.size >= 100 * ONE_MB
+        {
             (
                 "Instalador antigo",
                 "Instalador grande sem alteração há meses. Pode já ter cumprido a função.",

@@ -2,41 +2,43 @@
 
 ## Princípio central
 
-A L.I.V.I.A. é local-first. O frontend não percorre o sistema de arquivos diretamente. Toda leitura passa pelo core Rust, que devolve ao React somente um relatório serializável.
+A L.I.V.I.A. é local-first. O frontend não percorre o sistema de arquivos diretamente. Toda leitura passa pelo core Rust e o React recebe somente progresso serializado e o relatório final.
 
-## Fluxo
+## Fluxo de análise
 
-1. O usuário escolhe uma pasta ou unidade pelo diálogo nativo.
-2. O React chama o comando Tauri `scan_path`.
-3. O scanner Rust percorre o caminho com `walkdir`.
-4. Apenas metadados necessários são coletados: caminho, tamanho, extensão e data de modificação.
-5. O scanner agrega:
-   - espaço total;
-   - maiores arquivos;
-   - uso por extensão;
-   - uso por diretório de primeiro nível;
-   - recomendações conservadoras.
-6. O relatório é enviado ao frontend em uma única resposta.
-7. O frontend organiza a informação visualmente.
+1. O usuário escolhe o disco do sistema ou outro caminho.
+2. O React chama o comando Tauri assíncrono `scan_path`.
+3. O comando move a travessia pesada para `spawn_blocking`, fora da thread da interface.
+4. O scanner Rust percorre o caminho com `walkdir`, sem seguir links e sem atravessar para outro sistema de arquivos.
+5. Eventos `scan-progress` são emitidos durante a execução.
+6. O frontend mostra arquivos, pastas, bytes, tempo e caminho atual.
+7. O usuário pode chamar `cancel_scan`; o core encerra de forma cooperativa.
+8. Ao terminar, o scanner devolve um `ScanReport`.
 
-## Limites da 0.1
+## Uso de memória
 
-A implementação inicial privilegia clareza e segurança em vez de performance extrema. WizTree consegue velocidade excepcional aproveitando estruturas específicas do NTFS. A L.I.V.I.A. 0.1 usa uma travessia convencional e portátil pelo Windows.
+A v0.1.0 guardava todos os arquivos encontrados em um vetor para depois ordenar os maiores. Em uma unidade inteira isso poderia consumir muita memória.
 
-Uma fase posterior pode introduzir um scanner NTFS especializado atrás da mesma interface de domínio, sem acoplar a UI ao mecanismo.
+A v0.1.1 mantém apenas os 40 maiores arquivos em uma heap limitada. Agregações por extensão e diretório usam mapas incrementais. Recomendações também são aparadas durante a análise.
+
+O consumo cresce principalmente com o número de extensões e diretórios de primeiro nível, não com a quantidade total de arquivos.
+
+## Performance
+
+A 0.1.1 melhora responsividade e reduz pressão de memória, mas ainda usa travessia convencional do sistema de arquivos.
+
+WizTree obtém grande parte de sua velocidade lendo estruturas específicas do NTFS. A próxima evolução de performance é um scanner NTFS/MFT especializado atrás do mesmo contrato de relatório, com fallback para a travessia atual.
 
 ## Segurança
 
-O motor de recomendação não sugere itens em diretórios protegidos conhecidos, incluindo Windows, Program Files, ProgramData e System Volume Information.
+- nenhum comando de exclusão existe;
+- links não são seguidos;
+- o scanner não atravessa outros sistemas de arquivos;
+- caminhos sensíveis conhecidos não entram nas recomendações;
+- erros de permissão são contabilizados e ignorados.
 
-A 0.1 não possui comando de exclusão.
+## Mobile
 
-## Evolução prevista
+Tauri 2 permite um shell Android no futuro, mas o scanner desktop não pode ser transplantado diretamente. Android exige APIs como Storage Access Framework e obedece a permissões e escopos de armazenamento diferentes.
 
-- scanner concorrente;
-- leitura especializada de NTFS/MFT;
-- cancelamento e progresso incremental;
-- persistência local de snapshots;
-- detecção de duplicatas por tamanho + hash;
-- regras configuráveis de limpeza;
-- lixeira e histórico.
+A camada de classificação e apresentação pode ser compartilhada onde fizer sentido; a coleta será específica por plataforma.

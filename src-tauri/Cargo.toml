@@ -1,6 +1,6 @@
 [package]
 name = "livia"
-version = "0.1.0"
+version = "0.1.1"
 description = "Leitura Inteligente e Visualização de Informações de Armazenamento"
 authors = ["Antonio Silva"]
 edition = "2021"
@@ -11,6 +11,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+image = { version = "0.25", default-features = false, features = ["ico"] }
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

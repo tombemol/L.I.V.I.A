@@ -2,29 +2,50 @@
 
 **Leitura Inteligente e Visualização de Informações de Armazenamento**
 
-L.I.V.I.A. é um aplicativo desktop para Windows que transforma o armazenamento do computador em informação útil: mostra o que está ocupando espaço, destaca arquivos e pastas relevantes e sugere itens que merecem revisão sem tratar “arquivo velho” como sinônimo de “lixo”.
+L.I.V.I.A. é um aplicativo desktop local-first para entender o que ocupa espaço no computador sem transformar a análise em uma planilha com crise de identidade.
 
-A referência de problema é o WizTree. A proposta da L.I.V.I.A. é manter a utilidade de uma análise rápida de disco, mas com uma interface contemporânea, leitura mais clara e uma camada de recomendações explicáveis.
+A referência de problema é o WizTree. A proposta é preservar a utilidade de uma análise de disco rápida, mas com uma interface contemporânea, progresso visível e recomendações conservadoras.
 
-## 0.1 — Fundação
+## Versão atual
 
-- aplicativo desktop real com **Tauri 2**;
-- frontend em **React 19 + TypeScript**;
-- varredura recursiva feita em **Rust**;
-- seleção nativa de pasta ou unidade;
-- total ocupado, arquivos, diretórios ignorados e tempo de análise;
-- maiores arquivos encontrados;
-- distribuição de espaço por extensão;
-- treemap das áreas que mais ocupam espaço;
-- recomendações iniciais por tamanho, idade e tipo;
-- áreas sensíveis do Windows protegidas das recomendações;
-- CI para Windows e workflow de release.
+### v0.1.1 — Responsive Scan
 
-## Segurança primeiro
+A v0.1.1 corrige os principais problemas encontrados no primeiro teste real:
 
-A 0.1 **não apaga arquivos**.
+- análise executada fora da thread da interface;
+- janela continua respondendo enquanto o disco é percorrido;
+- progresso ao vivo com arquivos, pastas, bytes, tempo e caminho atual;
+- cancelamento de análise;
+- consumo de memória reduzido: os maiores arquivos são mantidos em estrutura limitada em vez de guardar todos os arquivos em memória;
+- varredura fica restrita ao mesmo sistema de arquivos da unidade selecionada, evitando atravessar pontos de montagem;
+- limite maior de diretórios abertos para reduzir gargalos de travessia;
+- acesso direto ao disco do sistema;
+- interface refeita como utilitário desktop, sem hero de landing page;
+- título da janela revisado;
+- novo ícone da L.I.V.I.A.;
+- recomendações continuam somente leitura.
 
-A aplicação lê somente metadados necessários para a análise e mantém tudo local. O motor de recomendação evita caminhos sensíveis do sistema. Quando a limpeza assistida chegar, ações destrutivas continuarão separadas por nível de risco e exigirão confirmação explícita.
+## O que a L.I.V.I.A. mostra
+
+- espaço total encontrado;
+- quantidade de arquivos e pastas;
+- diretórios de primeiro nível que mais pesam;
+- distribuição por extensão;
+- maiores arquivos;
+- itens antigos, temporários, instaladores e arquivos muito grandes que merecem revisão;
+- entradas inacessíveis ignoradas com segurança.
+
+## Segurança
+
+A L.I.V.I.A. **não exclui arquivos** nesta fase.
+
+O scanner lê metadados localmente e o motor de recomendação evita sugerir itens em áreas sensíveis conhecidas do Windows.
+
+### Windows SmartScreen
+
+As builds públicas atuais ainda **não possuem assinatura Authenticode com certificado de code signing**. Por isso o Windows pode exibir “Fornecedor desconhecido” e o SmartScreen pode pedir confirmação em instalações novas.
+
+Esse aviso é diferente de uma detecção técnica de malware, mas a experiência é ruim e a assinatura do executável está no roadmap antes da versão estável. Não será usado certificado autoassinado para maquiar o problema: a meta é assinatura confiável e verificável.
 
 ## Stack
 
@@ -46,7 +67,7 @@ npm install
 npm run tauri dev
 ```
 
-Para gerar o executável/instalador:
+Para gerar o instalador:
 
 ```bash
 npm run tauri build
@@ -61,8 +82,8 @@ L.I.V.I.A.
 │  ├─ lib/
 │  └─ App.tsx
 ├─ src-tauri/
-│  ├─ src/scanner.rs       # Motor de análise
-│  ├─ src/lib.rs           # Ponte Tauri
+│  ├─ src/scanner.rs       # Scanner e agregação
+│  ├─ src/lib.rs           # Comandos, estado e eventos Tauri
 │  └─ capabilities/
 ├─ docs/
 │  ├─ ARCHITECTURE.md
@@ -73,41 +94,47 @@ L.I.V.I.A.
 
 ## Roadmap
 
-### 0.1
-- [x] shell desktop Tauri;
-- [x] seleção de pasta;
-- [x] scanner recursivo em Rust;
-- [x] maiores arquivos;
-- [x] distribuição por extensão;
-- [x] treemap;
-- [x] recomendações iniciais;
-- [x] CI e release Windows;
-- [x] validar build no runner Windows;
-- [ ] benchmark em discos grandes.
+### 0.1.1 — Robustez e UX
+- [x] scanner fora da thread da interface;
+- [x] progresso ao vivo;
+- [x] cancelamento;
+- [x] memória limitada para ranking de maiores arquivos;
+- [x] visual redesenhado;
+- [x] novo ícone;
+- [x] README atualizado.
 
-### 0.2
+### 0.2 — Scanner e análise
+- [ ] benchmark em discos grandes;
+- [ ] scanner NTFS especializado usando MFT para unidades compatíveis;
 - [ ] filtros e busca;
 - [ ] duplicatas;
 - [ ] análise dedicada de caches e temporários;
-- [ ] score de confiança e risco;
-- [ ] configuração das regras de recomendação.
+- [ ] score configurável de confiança e risco.
 
-### 0.3
+### 0.3 — Limpeza assistida
 - [ ] seleção múltipla;
 - [ ] prévia do espaço recuperável;
 - [ ] lixeira em vez de exclusão direta;
 - [ ] histórico das ações;
 - [ ] desfazer quando tecnicamente possível.
 
-## Versão atual
+### 1.0 — Distribuição confiável
+- [ ] assinatura Authenticode com certificado confiável;
+- [ ] atualização automática;
+- [ ] benchmarks publicados;
+- [ ] política de segurança e releases verificáveis.
 
-**v0.1.0 — Foundation**
+### Android — futuro
+- [ ] protótipo Tauri 2 para Android;
+- [ ] adaptar a análise ao Storage Access Framework e às restrições de armazenamento do Android;
+- [ ] interface responsiva para toque;
+- [ ] compartilhar regras de classificação com o core quando a plataforma permitir.
 
-A primeira versão funcional já possui scanner local em Rust, visualização de armazenamento e recomendações somente leitura. O CI valida frontend e Rust, gera instaladores Windows como artefatos e a publicação em `main` cria a pré-release correspondente no GitHub.
+O Android fica depois de estabilizar o scanner Windows. O modelo de permissões e armazenamento é diferente, então não será uma cópia preguiçosa do executável desktop.
 
 ## Design
 
-As regras visuais ficam em [docs/DESIGN.md](docs/DESIGN.md). O projeto usa o vocabulário e as heurísticas do [Impeccable](https://impeccable.style/) como referência contínua para evitar padrões genéricos de interface gerada por IA.
+A referência visual contínua é o [Impeccable](https://impeccable.style/). A interface deve se comportar como ferramenta técnica: hierarquia clara, linguagem concreta, densidade desktop e nenhuma decoração competindo com os dados.
 
 ## Licença
 
