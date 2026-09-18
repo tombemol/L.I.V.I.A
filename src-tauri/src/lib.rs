@@ -359,3 +359,37 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a L.I.V.I.A.");
 }
+
+
+#[cfg(test)]
+mod cleanup_tests {
+    use super::is_protected_path;
+    use std::path::Path;
+
+    #[test]
+    fn blocks_windows_directory_case_insensitively() {
+        assert!(is_protected_path(
+            Path::new(r"C:\WINDOWS\System32\kernel32.dll"),
+            None,
+            Some(Path::new(r"C:\Windows")),
+        ));
+    }
+
+    #[test]
+    fn blocks_current_executable() {
+        assert!(is_protected_path(
+            Path::new(r"C:\Apps\Livia\L.I.V.I.A.exe"),
+            Some(Path::new(r"C:\Apps\Livia\L.I.V.I.A.exe")),
+            None,
+        ));
+    }
+
+    #[test]
+    fn allows_unrelated_user_file() {
+        assert!(!is_protected_path(
+            Path::new(r"C:\Users\Tom\Downloads\old.iso"),
+            Some(Path::new(r"C:\Apps\Livia\L.I.V.I.A.exe")),
+            Some(Path::new(r"C:\Windows")),
+        ));
+    }
+}
