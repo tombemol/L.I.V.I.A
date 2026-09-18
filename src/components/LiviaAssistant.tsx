@@ -40,6 +40,12 @@ type Props = {
     removedFiles: number;
   } | null;
   historyDelta?: number | null;
+  topRecommendation?: {
+    category: string;
+    confidence: number;
+    impact: string;
+    reason: string;
+  } | null;
 };
 
 type AssistantState = {
@@ -127,7 +133,8 @@ export function LiviaAssistant({
   loadedFromMemory = false,
   snapshotCount = 0,
   lastRefresh,
-  historyDelta = null
+  historyDelta = null,
+  topRecommendation = null
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -272,6 +279,15 @@ export function LiviaAssistant({
       };
     }
 
+    if (report && topRecommendation) {
+      return {
+        mood: topRecommendation.confidence >= 85 ? "explaining" : "suspicious",
+        title: "Tenho uma recomendação explicável",
+        message: `A principal regra agora é “${topRecommendation.category}”, com ${topRecommendation.confidence}% de confiança e impacto ${topRecommendation.impact.toLocaleLowerCase("pt-BR")}. Motivo: ${topRecommendation.reason} Eu mostro evidência e risco antes de qualquer botão de limpeza, porque adivinhação com arquivo alheio é um hobby péssimo.`,
+        key: `recommendation:${report.indexRoot}:${topRecommendation.category}:${topRecommendation.confidence}`
+      };
+    }
+
     if (report) {
       const reclaimable = report.recommendations.reduce((sum, item) => sum + item.size, 0);
 
@@ -315,7 +331,8 @@ export function LiviaAssistant({
     restoreBusy,
     snapshotCount,
     report,
-    selectedFile
+    selectedFile,
+    topRecommendation
   ]);
 
   useEffect(() => {
