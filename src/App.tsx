@@ -37,6 +37,7 @@ import { CleanupTray } from "./components/CleanupTray";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
 import type {
   CleanupHistoryEntry,
+  CleanupRestoreResult,
   CleanupResult,
   DuplicateProgress,
   DuplicateReport,
@@ -164,6 +165,22 @@ function recommendationToFile(
   };
 }
 
+function persistCleanupHistory(entries: CleanupHistoryEntry[]) {
+  const persistent = entries.map((entry) => ({
+    id: entry.id,
+    timestamp: entry.timestamp,
+    movedFiles: entry.movedFiles,
+    movedBytes: entry.movedBytes,
+    failedFiles: entry.failedFiles,
+    undoableFiles: 0,
+    restoredFiles: entry.restoredFiles ?? 0,
+    restoredBytes: entry.restoredBytes ?? 0,
+    restoreFailedFiles: entry.restoreFailedFiles ?? 0
+  }));
+
+  localStorage.setItem("livia-cleanup-history", JSON.stringify(persistent));
+}
+
 export default function App() {
   const [report, setReport] = useState<ScanReport | null>(null);
   const [busy, setBusy] = useState(false);
@@ -189,11 +206,21 @@ export default function App() {
   const [duplicateReport, setDuplicateReport] = useState<DuplicateReport | null>(null);
   const [cleanupSelection, setCleanupSelection] = useState<Record<string, FileEntry>>({});
   const [cleanupBusy, setCleanupBusy] = useState(false);
+  const [restoreBusyOperation, setRestoreBusyOperation] = useState<string | null>(null);
   const [lastCleanup, setLastCleanup] = useState<{ files: number; bytes: number } | null>(null);
+  const [lastRestore, setLastRestore] = useState<{ files: number; bytes: number } | null>(null);
   const [cleanupHistory, setCleanupHistory] = useState<CleanupHistoryEntry[]>(() => {
     try {
       const saved = localStorage.getItem("livia-cleanup-history");
-      return saved ? (JSON.parse(saved) as CleanupHistoryEntry[]).slice(0, 10) : [];
+      if (!saved) return [];
+
+      return (JSON.parse(saved) as CleanupHistoryEntry[])
+        .map((entry) => ({
+          ...entry,
+          operationId: undefined,
+          undoableFiles: 0
+        }))
+        .slice(0, 10);
     } catch {
       return [];
     }
@@ -328,10 +355,35 @@ export default function App() {
       return next;
     });
     setLastCleanup(null);
+    setLastRestore(null);
   }
 
   function clearCleanupSelection() {
     setCleanupSelection({});
+  }
+  function selectDuplicateCopies(files: FileEntry[]) {
+    if (files.length < 2) return;
+
+    const [keeper, ...copies] = files;
+    const keeperWasSelected = Boolean(cleanupSelection[keeper.path]);
+    const baseCount = cleanupFiles.length - (keeperWasSelected ? 1 : 0);
+    const slots = Math.max(0, 200 - baseCount);
+    const notSelected = copies.filter((file) => !cleanupSelection[file.path]);
+    const accepted = notSelected.slice(0, slots);
+
+    setCleanupSelection((current) => {
+      const next = { ...current };
+      delete next[keeper.path];
+      for (const file of accepted) next[file.path] = file;
+      return next;
+    });
+
+    setLastCleanup(null);
+    setLastRestore(null);
+
+    if (accepted.length < notSelected.length) {
+      setError("A seleção de duplicatas parou no limite de 200 arquivos. A L.I.V.I.A. se recusa a transformar prudência em esporte radical.");
+    }
   }
 
   function changeSort(key: SortKey) {
@@ -370,6 +422,7 @@ export default function App() {
     setDuplicateReport(null);
     setCleanupSelection({});
     setLastCleanup(null);
+    setLastRestore(null);
     setProgress({
       root: path,
       filesScanned: 0,
@@ -460,16 +513,21 @@ export default function App() {
 
       if (result.movedFiles.length) {
         const entry: CleanupHistoryEntry = {
-          id: `${Date.now()}-${result.movedFiles.length}`,
+          id: result.operationId ?? `${Date.now()}-${result.movedFiles.length}`,
           timestamp: Date.now(),
           movedFiles: result.movedFiles.length,
           movedBytes: result.movedBytes,
-          failedFiles: result.failed.length
+          failedFiles: result.failed.length,
+          operationId: result.operationId ?? undefined,
+          undoableFiles: result.undoableFiles,
+          restoredFiles: 0,
+          restoredBytes: 0,
+          restoreFailedFiles: 0
         };
 
         setCleanupHistory((current) => {
           const next = [entry, ...current].slice(0, 10);
-          localStorage.setItem("livia-cleanup-history", JSON.stringify(next));
+          persistCleanupHistory(next);
           return next;
         });
 
@@ -477,6 +535,7 @@ export default function App() {
           files: result.movedFiles.length,
           bytes: result.movedBytes
         });
+        setLastRestore(null);
 
         try {
           const refreshed = await invoke<ScanReport>("browse_index", { path: report.root });
@@ -505,6 +564,75 @@ export default function App() {
       );
     } finally {
       setCleanupBusy(false);
+    }
+  }
+
+  async function restoreCleanup(operationId: string) {
+    if (!report || restoreBusyOperation) return;
+
+    setRestoreBusyOperation(operationId);
+    setError(null);
+    setLastCleanup(null);
+    setLastRestore(null);
+    setSelectedFile(null);
+
+    try {
+      const result = await invoke<CleanupRestoreResult>("restore_cleanup", { operationId });
+
+      setCleanupHistory((current) => {
+        const next = current.map((entry) => {
+          if (entry.operationId !== operationId) return entry;
+
+          const restoredFiles = (entry.restoredFiles ?? 0) + result.restoredFiles.length;
+          const restoredBytes = (entry.restoredBytes ?? 0) + result.restoredBytes;
+
+          return {
+            ...entry,
+            operationId: result.remainingUndoableFiles > 0 ? operationId : undefined,
+            undoableFiles: result.remainingUndoableFiles,
+            restoredFiles,
+            restoredBytes,
+            restoreFailedFiles: result.failed.length
+          };
+        });
+
+        persistCleanupHistory(next);
+        return next;
+      });
+
+      if (result.restoredFiles.length) {
+        setLastRestore({
+          files: result.restoredFiles.length,
+          bytes: result.restoredBytes
+        });
+
+        try {
+          const refreshed = await invoke<ScanReport>("browse_index", { path: report.root });
+          setReport(refreshed);
+        } catch {
+          try {
+            const rootReport = await invoke<ScanReport>("browse_index", { path: report.indexRoot });
+            setReport(rootReport);
+          } catch {
+            setReport(null);
+          }
+        }
+      }
+
+      if (result.failed.length) {
+        const firstReason = result.failed[0]?.reason;
+        setError(
+          `${result.failed.length} arquivo(s) não puderam ser restaurados.${firstReason ? ` Exemplo: ${firstReason}` : ""}`
+        );
+      }
+    } catch (reason) {
+      setError(
+        typeof reason === "string"
+          ? reason
+          : "Não foi possível desfazer esta limpeza."
+      );
+    } finally {
+      setRestoreBusyOperation(null);
     }
   }
 
@@ -537,7 +665,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.3.0</span>
+            <span className="version-pill">v0.3.1</span>
           </div>
         </header>
 
@@ -591,7 +719,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.3.0</span>
+            <span className="version-pill">v0.3.1</span>
           </div>
         </header>
 
@@ -1010,6 +1138,19 @@ export default function App() {
                       <strong>{formatBytes(group.reclaimableBytes)} recuperáveis</strong>
                       <span>{group.count} arquivos idênticos · {formatBytes(group.size)} cada</span>
                       <code title={group.hash}>{group.hash.slice(0, 18)}…</code>
+                      <button
+                        className="duplicate-cleanup-action"
+                        type="button"
+                        onClick={() => selectDuplicateCopies(group.files)}
+                        disabled={cleanupBusy || Boolean(restoreBusyOperation)}
+                        title={`Mantém ${group.files[0]?.name ?? "a primeira cópia"} e adiciona as demais à bandeja`}
+                      >
+                        <Trash2 size={12} />
+                        Selecionar cópias
+                      </button>
+                      <small className="duplicate-keeper">
+                        preserva: {group.files[0]?.name ?? "primeiro arquivo"}
+                      </small>
                     </div>
                     <div className="duplicate-files">
                       {group.files.slice(0, 6).map((file) => (
@@ -1125,15 +1266,16 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.3.0 · índice de sessão · limpeza assistida envia somente para a Lixeira.</span>
+        <span>v0.3.1 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
 
       <CleanupTray
         files={cleanupFiles}
-        busy={cleanupBusy}
+        busy={cleanupBusy || Boolean(restoreBusyOperation)}
         history={cleanupHistory}
+        restoreBusyOperation={restoreBusyOperation}
         onRemove={(path) =>
           setCleanupSelection((current) =>
             Object.fromEntries(
@@ -1143,6 +1285,7 @@ export default function App() {
         }
         onClear={clearCleanupSelection}
         onTrash={executeCleanup}
+        onRestore={restoreCleanup}
       />
 
       <LiviaAssistant
@@ -1154,7 +1297,9 @@ export default function App() {
         duplicateReport={duplicateReport}
         cleanupCount={cleanupFiles.length}
         cleanupBusy={cleanupBusy}
+        restoreBusy={Boolean(restoreBusyOperation)}
         lastCleanup={lastCleanup}
+        lastRestore={lastRestore}
       />
     </main>
   );

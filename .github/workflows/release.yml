@@ -42,6 +42,10 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
+            - desfazer seguro durante a sessão para itens identificados de forma inequívoca na Lixeira;
+            - histórico de limpeza mais rico, sem persistir caminhos ou identificadores da Lixeira;
+            - seleção assistida de cópias em grupos de duplicatas confirmadas;
+            - Lívia reage à restauração e ao fluxo de duplicatas;
             - limpeza assistida com seleção múltipla e revisão antes da ação;
             - envio para a Lixeira do Windows, sem exclusão permanente;
             - validação do arquivo novamente antes da limpeza e proteção da pasta do Windows;

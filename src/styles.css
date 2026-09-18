@@ -2367,3 +2367,128 @@ button:focus-visible {
     grid-column: 3;
   }
 }
+
+
+/* v0.3.1 — undo + duplicate review */
+.duplicate-cleanup-action {
+  min-height: 27px;
+  width: max-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+  border-radius: 5px;
+  color: var(--muted-strong);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.duplicate-cleanup-action:hover:not(:disabled) {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised));
+}
+
+.duplicate-cleanup-action:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.duplicate-keeper {
+  max-width: 230px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cleanup-history-row {
+  min-height: 54px;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  padding: 7px 0;
+  align-items: center;
+}
+
+.cleanup-history-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.cleanup-history-copy > span,
+.cleanup-history-copy > small {
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.cleanup-history-copy > strong {
+  overflow: hidden;
+  color: var(--muted-strong);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cleanup-history-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.cleanup-undo-button,
+.cleanup-restored-badge {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cleanup-undo-button {
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--line));
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-raised));
+  cursor: pointer;
+}
+
+.cleanup-undo-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-raised));
+}
+
+.cleanup-undo-button:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+.cleanup-restored-badge {
+  color: #62d58a;
+  border: 1px solid color-mix(in srgb, #62d58a 28%, var(--line));
+  background: color-mix(in srgb, #62d58a 7%, transparent);
+}
+
+.cleanup-history-note {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 7px;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .cleanup-history-row {
+    grid-template-columns: 14px minmax(0, 1fr);
+  }
+
+  .cleanup-history-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+    margin-top: 3px;
+  }
+}

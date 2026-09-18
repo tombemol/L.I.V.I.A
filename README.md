@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.3.0--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.3.1--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -91,6 +91,8 @@ flowchart LR
 | Hash parcial + confirmação completa | ✅ v0.2.2 |
 | Espaço recuperável confirmado | ✅ v0.2.2 |
 | Limpeza assistida para a Lixeira | ✅ v0.3.0 |
+| Desfazer seguro na sessão | ✅ v0.3.1 |
+| Seleção assistida de duplicatas | ✅ v0.3.1 |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -206,7 +208,7 @@ A L.I.V.I.A. agora sai do modo “eu só observo a bagunça” e passa a ajudar 
 - [x] atualizar o índice em memória depois da operação;
 - [x] manter histórico local resumido sem persistir caminhos de arquivos;
 - [x] fazer a Lívia reagir à seleção, execução e conclusão da limpeza;
-- [ ] restauração direta pela interface.
+- [x] restauração direta pela interface com identificação segura na sessão (v0.3.1).
 
 ```mermaid
 flowchart LR
@@ -220,6 +222,42 @@ flowchart LR
     L --> U[Atualizar índice]
     U --> H[Histórico resumido]
 ```
+
+## v0.3.1 — Desfazer seguro + revisão de duplicatas
+
+A limpeza agora fecha o ciclo: a L.I.V.I.A. tenta identificar a **entrada exata** criada na Lixeira para cada arquivo movido. Quando essa identificação é inequívoca, a operação ganha um botão **Desfazer** durante a sessão atual.
+
+Isso é deliberadamente conservador. Se a entrada não puder ser ligada com segurança ao arquivo que a L.I.V.I.A. acabou de mover, o aplicativo não inventa um vínculo só para poder exibir um botão bonito.
+
+### Entregas
+
+- [x] registrar a Lixeira antes e depois da limpeza para identificar somente itens novos;
+- [x] vincular o item pelo identificador do sistema e pelo caminho original;
+- [x] manter os identificadores da Lixeira somente em memória;
+- [x] restaurar arquivos ao caminho original pela API da Lixeira;
+- [x] tratar colisões/erros sem restaurar “o arquivo mais parecido”;
+- [x] recolocar arquivos restaurados no índice atual quando ele ainda corresponde à mesma raiz;
+- [x] histórico mais rico com movidos, preservados e restaurados;
+- [x] histórico persistente continua sem caminhos ou identificadores da Lixeira;
+- [x] botão **Selecionar cópias** em duplicatas confirmadas;
+- [x] seleção em lote preserva explicitamente a primeira cópia da lista para revisão;
+- [x] Lívia reage ao desfazer, à restauração concluída e à seleção assistida de duplicatas.
+
+```mermaid
+flowchart LR
+    S[Seleção revisada] --> B[Snapshot da Lixeira]
+    B --> T[Mover arquivos]
+    T --> A[Listar Lixeira novamente]
+    A --> M{Item novo + caminho original batem?}
+    M -->|sim| U[Registrar Undo em memória]
+    M -->|não| N[Sem desfazer automático]
+    U --> R[Desfazer]
+    R --> C{Restauração segura}
+    C -->|ok| I[Recolocar no índice]
+    C -->|colisão/erro| P[Manter item na Lixeira]
+```
+
+O desfazer é **ligado à sessão atual**. Ao fechar a aplicação, os identificadores do sistema operacional são descartados. O histórico resumido continua existindo, mas sem dados suficientes para executar uma restauração automática depois de reabrir o app. É menos mágico e muito menos irresponsável.
 
 ## Arquitetura
 
@@ -286,6 +324,8 @@ A análise, a indexação, a busca, o MFT e a confirmação de duplicatas contin
 
 A partir da **v0.3.0**, existe uma ação explícita de limpeza assistida. Ela só opera sobre arquivos que o usuário selecionou, exige revisão e confirmação, valida novamente tamanho e tipo do arquivo antes da ação e usa a **Lixeira do sistema** em vez de exclusão permanente. Arquivos dentro da pasta do Windows e o executável atual da L.I.V.I.A. são bloqueados pelo backend.
 
+Na **v0.3.1**, o desfazer só fica disponível quando a L.I.V.I.A. consegue correlacionar de forma inequívoca o arquivo movido com a entrada nova criada na Lixeira. O identificador dessa entrada fica apenas em memória e morre junto com a sessão.
+
 O caminho MFT também é somente leitura. Se ele não estiver disponível, o aplicativo não tenta “consertar” permissões, não altera políticas do Windows e não cria serviço privilegiado.
 
 ### SmartScreen
@@ -328,7 +368,8 @@ flowchart TD
     E --> F[v0.2.2 Duplicatas por hash]
     F --> V[v0.2.3 Visualizações + Lívia]
     V --> G[v0.3 Limpeza assistida]
-    G --> H[v0.4 Snapshots + USN Journal]
+    G --> U[v0.3.1 Undo seguro]
+    U --> H[v0.4 Snapshots + USN Journal]
     H --> I[v1.0 Distribuição assinada]
     E -. plataforma paralela .-> J[Android]
 ```
@@ -354,7 +395,8 @@ flowchart TD
 - ✅ validação do arquivo novamente antes de mover;
 - ✅ proteção da pasta do Windows e do executável em uso;
 - ✅ histórico local resumido das operações;
-- ⏳ desfazer/restaurar diretamente pela L.I.V.I.A. quando a API permitir identificação segura do item na Lixeira.
+- ✅ v0.3.1: desfazer/restaurar quando a entrada exata da Lixeira puder ser identificada;
+- ✅ v0.3.1: seleção assistida de cópias em grupos de duplicatas confirmadas.
 
 ### v0.4 — Persistência e mudanças
 - snapshots locais;

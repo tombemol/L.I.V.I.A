@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, Check, Clock3, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, Clock3, RotateCcw, Trash2, X } from "lucide-react";
 import { formatBytes, shortPath } from "../lib/format";
 import type { CleanupHistoryEntry, FileEntry } from "../types";
 
@@ -7,18 +7,22 @@ type Props = {
   files: FileEntry[];
   busy: boolean;
   history: CleanupHistoryEntry[];
+  restoreBusyOperation: string | null;
   onRemove: (path: string) => void;
   onClear: () => void;
   onTrash: () => Promise<void>;
+  onRestore: (operationId: string) => Promise<void>;
 };
 
 export function CleanupTray({
   files,
   busy,
   history,
+  restoreBusyOperation,
   onRemove,
   onClear,
-  onTrash
+  onTrash,
+  onRestore
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -56,7 +60,9 @@ export function CleanupTray({
             <small>
               {files.length
                 ? `${files.length} arquivo${files.length === 1 ? "" : "s"} · ${formatBytes(totalBytes)}`
-                : "Nenhum arquivo selecionado"}
+                : history.some((entry) => entry.operationId && (entry.undoableFiles ?? 0) > 0)
+                  ? "Há uma limpeza que ainda pode ser desfeita"
+                  : "Nenhum arquivo selecionado"}
             </small>
           </span>
         </button>
@@ -114,8 +120,8 @@ export function CleanupTray({
                   </strong>
                   <span>
                     {confirming
-                      ? "A L.I.V.I.A. vai validar cada arquivo de novo e mover somente os que continuam iguais ao índice. Arquivos do Windows são bloqueados."
-                      : "Os arquivos selecionados serão enviados para a Lixeira do sistema. O conteúdo não é excluído de forma permanente por este fluxo."}
+                      ? "A L.I.V.I.A. valida os arquivos novamente, tenta registrar a entrada exata da Lixeira para permitir desfazer e preserva tudo que mudou desde o índice."
+                      : "Os arquivos selecionados vão para a Lixeira. Quando a entrada puder ser identificada com segurança, o histórico desta sessão oferece Desfazer."}
                   </span>
                 </div>
               </div>
@@ -140,7 +146,7 @@ export function CleanupTray({
                 >
                   {confirming ? <Check size={15} /> : <Trash2 size={15} />}
                   {busy
-                    ? "Movendo…"
+                    ? "Processando…"
                     : confirming
                       ? `Confirmar ${formatBytes(totalBytes)}`
                       : "Mover para a Lixeira"}
@@ -152,23 +158,62 @@ export function CleanupTray({
           {history.length ? (
             <div className="cleanup-history">
               <span className="section-kicker">HISTÓRICO LOCAL</span>
-              {history.slice(0, 5).map((entry) => (
-                <div className="cleanup-history-row" key={entry.id}>
-                  <Clock3 size={12} />
-                  <span>
-                    {new Date(entry.timestamp).toLocaleString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit"
-                    })}
-                  </span>
-                  <strong>
-                    {entry.movedFiles} arquivo{entry.movedFiles === 1 ? "" : "s"} · {formatBytes(entry.movedBytes)}
-                  </strong>
-                  {entry.failedFiles ? <small>{entry.failedFiles} preservado(s)</small> : null}
-                </div>
-              ))}
+              {history.slice(0, 6).map((entry) => {
+                const undoable = entry.undoableFiles ?? 0;
+                const restored = entry.restoredFiles ?? 0;
+                const restoring = Boolean(
+                  entry.operationId && restoreBusyOperation === entry.operationId
+                );
+
+                return (
+                  <div className="cleanup-history-row" key={entry.id}>
+                    <Clock3 size={12} />
+                    <div className="cleanup-history-copy">
+                      <span>
+                        {new Date(entry.timestamp).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </span>
+                      <strong>
+                        {entry.movedFiles} movido{entry.movedFiles === 1 ? "" : "s"} · {formatBytes(entry.movedBytes)}
+                      </strong>
+                      <small>
+                        {restored
+                          ? `${restored} restaurado${restored === 1 ? "" : "s"} · ${formatBytes(entry.restoredBytes ?? 0)}`
+                          : entry.failedFiles
+                            ? `${entry.failedFiles} preservado(s) durante a limpeza`
+                            : undoable
+                              ? `${undoable} disponível(is) para desfazer nesta sessão`
+                              : "operação concluída"}
+                      </small>
+                    </div>
+
+                    <div className="cleanup-history-actions">
+                      {entry.operationId && undoable > 0 ? (
+                        <button
+                          className="cleanup-undo-button"
+                          type="button"
+                          onClick={() => onRestore(entry.operationId as string)}
+                          disabled={busy}
+                        >
+                          <RotateCcw size={12} />
+                          {restoring ? "Restaurando…" : `Desfazer ${undoable}`}
+                        </button>
+                      ) : restored ? (
+                        <span className="cleanup-restored-badge">
+                          <Check size={11} /> restaurado
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="cleanup-history-note">
+                O botão Desfazer é propositalmente ligado à sessão atual. O histórico persistente guarda só totais, não caminhos nem identificadores da Lixeira.
+              </p>
             </div>
           ) : null}
         </div>
