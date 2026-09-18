@@ -1478,6 +1478,7 @@ export default function App() {
         snapshotCount={snapshots.length}
         lastRefresh={lastRefresh}
         historyDelta={snapshotDelta}
+        topRecommendation={report.recommendations[0] ?? null}
       />
     </main>
   );
