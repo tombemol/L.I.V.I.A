@@ -31,6 +31,8 @@ type Props = {
   restoreBusy?: boolean;
   lastCleanup?: { files: number; bytes: number } | null;
   lastRestore?: { files: number; bytes: number } | null;
+  loadedFromMemory?: boolean;
+  snapshotCount?: number;
 };
 
 type AssistantState = {
@@ -114,7 +116,9 @@ export function LiviaAssistant({
   cleanupBusy = false,
   restoreBusy = false,
   lastCleanup,
-  lastRestore
+  lastRestore,
+  loadedFromMemory = false,
+  snapshotCount = 0
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -221,6 +225,15 @@ export function LiviaAssistant({
       };
     }
 
+    if (report && loadedFromMemory) {
+      return {
+        mood: "happy",
+        title: "Eu lembrei desse disco",
+        message: `Recuperei o índice salvo sem te obrigar a escanear tudo de novo. Tenho ${snapshotCount.toLocaleString("pt-BR")} snapshot(s) deste local. Memória funcional, conceito ousado para software.`,
+        key: `memory:${report.indexRoot}:${snapshotCount}`
+      };
+    }
+
     if (report) {
       const reclaimable = report.recommendations.reduce((sum, item) => sum + item.size, 0);
 
@@ -257,8 +270,10 @@ export function LiviaAssistant({
     error,
     lastCleanup,
     lastRestore,
+    loadedFromMemory,
     progress,
     restoreBusy,
+    snapshotCount,
     report,
     selectedFile
   ]);

@@ -3,7 +3,7 @@ mod scanner;
 use scanner::{
     DuplicateProgress, DuplicateReport, FileEntry, ScanIndex, ScanProgress, ScanReport, SearchResponse,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashSet, VecDeque},
     ffi::OsString,
@@ -15,7 +15,41 @@ use std::{
     },
     time::{SystemTime, UNIX_EPOCH},
 };
+
 use tauri::{AppHandle, Emitter, State};
+
+
+const PERSISTENCE_SCHEMA: u32 = 1;
+const SNAPSHOT_LIMIT: usize = 60;
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PersistedIndexEnvelope {
+    schema_version: u32,
+    saved_at_secs: u64,
+    index: ScanIndex,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct StorageSnapshot {
+    id: String,
+    created_at_secs: u64,
+    root: String,
+    total_size: u64,
+    file_count: u64,
+    folder_count: u64,
+    indexed_files: usize,
+    engine_label: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CachedIndexResponse {
+    report: ScanReport,
+    saved_at_secs: u64,
+    snapshots: Vec<StorageSnapshot>,
+}
 
 #[derive(Default)]
 struct ScanState {
@@ -90,6 +124,13 @@ async fn scan_path(
     match result {
         Ok(Ok(bundle)) => {
             let report = bundle.report;
+            if let Err(error) = save_persisted_index(&bundle.index) {
+                eprintln!("L.I.V.I.A.: não foi possível persistir o índice: {error}");
+            }
+            if let Err(error) = record_snapshot(&report) {
+                eprintln!("L.I.V.I.A.: não foi possível registrar o snapshot: {error}");
+            }
+
             let mut guard = index_state
                 .write()
                 .map_err(|_| "O índice local ficou indisponível.".to_string())?;
@@ -99,6 +140,44 @@ async fn scan_path(
         Ok(Err(error)) => Err(format!("A análise foi interrompida: {error}")),
         Err(error) => Err(format!("A análise foi interrompida: {error}")),
     }
+}
+
+
+#[tauri::command]
+async fn load_cached_index(
+    state: State<'_, ScanState>,
+) -> Result<Option<CachedIndexResponse>, String> {
+    let index_state = Arc::clone(&state.index);
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(envelope) = load_persisted_index()? else {
+            return Ok(None);
+        };
+
+        let report = scanner::browse_index(&envelope.index, envelope.index.root.clone())
+            .map_err(|error| format!("O índice persistente não pôde ser reconstruído: {error}"))?;
+        let snapshots = load_snapshot_history(&envelope.index.root, 12)?;
+
+        let mut guard = index_state
+            .write()
+            .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+        *guard = Some(envelope.index);
+
+        Ok(Some(CachedIndexResponse {
+            report,
+            saved_at_secs: envelope.saved_at_secs,
+            snapshots,
+        }))
+    })
+    .await
+    .map_err(|error| format!("Falha ao carregar o índice persistente: {error}"))?
+}
+
+#[tauri::command]
+async fn snapshot_history(root: String, limit: usize) -> Result<Vec<StorageSnapshot>, String> {
+    tauri::async_runtime::spawn_blocking(move || load_snapshot_history(&root, limit))
+        .await
+        .map_err(|error| format!("Falha ao carregar snapshots: {error}"))?
 }
 
 #[tauri::command]
@@ -340,6 +419,12 @@ async fn move_to_trash(
             None
         };
 
+        if !moved_files.is_empty() {
+            if let Err(error) = persist_state_index(&index_state) {
+                eprintln!("L.I.V.I.A.: não foi possível atualizar o índice persistente após limpeza: {error}");
+            }
+        }
+
         Ok(CleanupResult {
             moved_files,
             moved_bytes,
@@ -429,6 +514,12 @@ async fn restore_cleanup(
             .map(|file| file.size)
             .fold(0_u64, u64::saturating_add);
 
+        if !restored_files.is_empty() {
+            if let Err(error) = persist_state_index(&index_state) {
+                eprintln!("L.I.V.I.A.: não foi possível atualizar o índice persistente após restauração: {error}");
+            }
+        }
+
         Ok(CleanupRestoreResult {
             restored_files,
             restored_bytes,
@@ -438,6 +529,144 @@ async fn restore_cleanup(
     })
     .await
     .map_err(|error| format!("Falha ao desfazer a limpeza: {error}"))?
+}
+
+
+fn persistence_dir() -> Result<PathBuf, String> {
+    let base = std::env::var_os("LOCALAPPDATA")
+        .or_else(|| std::env::var_os("APPDATA"))
+        .ok_or_else(|| "O Windows não informou uma pasta local para os dados da L.I.V.I.A.".to_string())?;
+
+    let dir = PathBuf::from(base).join("L.I.V.I.A").join("state");
+    fs::create_dir_all(&dir)
+        .map_err(|error| format!("Não foi possível criar a pasta de estado: {error}"))?;
+    Ok(dir)
+}
+
+fn persisted_index_path() -> Result<PathBuf, String> {
+    Ok(persistence_dir()?.join("index-v1.json"))
+}
+
+fn snapshots_path() -> Result<PathBuf, String> {
+    Ok(persistence_dir()?.join("snapshots-v1.json"))
+}
+
+fn now_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
+fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> Result<(), String> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| "O caminho de persistência é inválido.".to_string())?;
+    fs::create_dir_all(parent)
+        .map_err(|error| format!("Não foi possível criar a pasta de estado: {error}"))?;
+
+    let temp = path.with_extension("json.tmp");
+    let bytes = serde_json::to_vec(value)
+        .map_err(|error| format!("Não foi possível serializar o estado: {error}"))?;
+    fs::write(&temp, bytes)
+        .map_err(|error| format!("Não foi possível gravar o estado temporário: {error}"))?;
+
+    if path.exists() {
+        fs::remove_file(path)
+            .map_err(|error| format!("Não foi possível substituir o estado anterior: {error}"))?;
+    }
+
+    fs::rename(&temp, path)
+        .map_err(|error| format!("Não foi possível concluir a gravação do estado: {error}"))
+}
+
+fn save_persisted_index(index: &ScanIndex) -> Result<u64, String> {
+    let saved_at_secs = now_secs();
+    let envelope = PersistedIndexEnvelope {
+        schema_version: PERSISTENCE_SCHEMA,
+        saved_at_secs,
+        index: index.clone(),
+    };
+
+    write_json_atomic(&persisted_index_path()?, &envelope)?;
+    Ok(saved_at_secs)
+}
+
+fn load_persisted_index() -> Result<Option<PersistedIndexEnvelope>, String> {
+    let path = persisted_index_path()?;
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    let content = fs::read_to_string(&path)
+        .map_err(|error| format!("Não foi possível ler o índice persistente: {error}"))?;
+    let envelope: PersistedIndexEnvelope = serde_json::from_str(&content)
+        .map_err(|error| format!("O índice persistente está corrompido: {error}"))?;
+
+    if envelope.schema_version != PERSISTENCE_SCHEMA {
+        return Ok(None);
+    }
+
+    Ok(Some(envelope))
+}
+
+fn record_snapshot(report: &ScanReport) -> Result<(), String> {
+    let path = snapshots_path()?;
+    let mut snapshots = if path.exists() {
+        let content = fs::read_to_string(&path)
+            .map_err(|error| format!("Não foi possível ler os snapshots: {error}"))?;
+        serde_json::from_str::<Vec<StorageSnapshot>>(&content).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    let created_at_secs = now_secs();
+    snapshots.insert(
+        0,
+        StorageSnapshot {
+            id: format!("snapshot-{created_at_secs}-{}", report.file_count),
+            created_at_secs,
+            root: report.index_root.clone(),
+            total_size: report.total_size,
+            file_count: report.file_count,
+            folder_count: report.folder_count,
+            indexed_files: report.indexed_files,
+            engine_label: report.engine.label.clone(),
+        },
+    );
+
+    snapshots.truncate(SNAPSHOT_LIMIT);
+    write_json_atomic(&path, &snapshots)
+}
+
+fn load_snapshot_history(root: &str, limit: usize) -> Result<Vec<StorageSnapshot>, String> {
+    let path = snapshots_path()?;
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+
+    let content = fs::read_to_string(&path)
+        .map_err(|error| format!("Não foi possível ler os snapshots: {error}"))?;
+    let snapshots = serde_json::from_str::<Vec<StorageSnapshot>>(&content)
+        .map_err(|error| format!("O histórico de snapshots está corrompido: {error}"))?;
+
+    let normalized_root = Path::new(root);
+    Ok(snapshots
+        .into_iter()
+        .filter(|snapshot| same_path(Path::new(&snapshot.root), normalized_root))
+        .take(limit.clamp(1, SNAPSHOT_LIMIT))
+        .collect())
+}
+
+fn persist_state_index(index_state: &Arc<RwLock<Option<ScanIndex>>>) -> Result<(), String> {
+    let guard = index_state
+        .read()
+        .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+    let index = guard
+        .as_ref()
+        .ok_or_else(|| "Não há índice para persistir.".to_string())?;
+    save_persisted_index(index)?;
+    Ok(())
 }
 
 fn cleanup_operation_id() -> String {
@@ -537,6 +766,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             scan_path,
+            load_cached_index,
+            snapshot_history,
             browse_index,
             search_index,
             find_duplicates,

@@ -139,3 +139,21 @@ export type CleanupHistoryEntry = {
   restoredBytes?: number;
   restoreFailedFiles?: number;
 };
+
+
+export type StorageSnapshot = {
+  id: string;
+  createdAtSecs: number;
+  root: string;
+  totalSize: number;
+  fileCount: number;
+  folderCount: number;
+  indexedFiles: number;
+  engineLabel: string;
+};
+
+export type CachedIndexResponse = {
+  report: ScanReport;
+  savedAtSecs: number;
+  snapshots: StorageSnapshot[];
+};

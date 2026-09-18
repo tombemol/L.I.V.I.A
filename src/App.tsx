@@ -36,6 +36,7 @@ import { LiviaAssistant } from "./components/LiviaAssistant";
 import { CleanupTray } from "./components/CleanupTray";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
 import type {
+  CachedIndexResponse,
   CleanupHistoryEntry,
   CleanupRestoreResult,
   CleanupResult,
@@ -44,7 +45,8 @@ import type {
   FileEntry,
   ScanProgress,
   ScanReport,
-  SearchResponse
+  SearchResponse,
+  StorageSnapshot
 } from "./types";
 
 function LogoGlyph() {
@@ -146,6 +148,20 @@ function formatModified(seconds: number | null) {
   return new Date(seconds * 1000).toLocaleString("pt-BR");
 }
 
+function formatSnapshotTime(seconds: number) {
+  return new Date(seconds * 1000).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function formatSignedBytes(value: number) {
+  if (!value) return "sem mudança";
+  return `${value > 0 ? "+" : "−"}${formatBytes(Math.abs(value))}`;
+}
+
 function recommendationToFile(
   item: ScanReport["recommendations"][number]
 ): FileEntry {
@@ -209,6 +225,9 @@ export default function App() {
   const [restoreBusyOperation, setRestoreBusyOperation] = useState<string | null>(null);
   const [lastCleanup, setLastCleanup] = useState<{ files: number; bytes: number } | null>(null);
   const [lastRestore, setLastRestore] = useState<{ files: number; bytes: number } | null>(null);
+  const [snapshots, setSnapshots] = useState<StorageSnapshot[]>([]);
+  const [indexSavedAt, setIndexSavedAt] = useState<number | null>(null);
+  const [loadedFromMemory, setLoadedFromMemory] = useState(false);
   const [cleanupHistory, setCleanupHistory] = useState<CleanupHistoryEntry[]>(() => {
     try {
       const saved = localStorage.getItem("livia-cleanup-history");
@@ -255,6 +274,24 @@ export default function App() {
     invoke<string>("system_drive")
       .then(setSystemDrive)
       .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    invoke<CachedIndexResponse | null>("load_cached_index")
+      .then((cached) => {
+        if (!active || !cached) return;
+        setReport(cached.report);
+        setIndexSavedAt(cached.savedAtSecs);
+        setSnapshots(cached.snapshots);
+        setLoadedFromMemory(true);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -332,6 +369,11 @@ export default function App() {
     () => Object.values(cleanupSelection),
     [cleanupSelection]
   );
+
+  const snapshotDelta = useMemo(() => {
+    if (snapshots.length < 2) return null;
+    return snapshots[0].totalSize - snapshots[1].totalSize;
+  }, [snapshots]);
 
   const breadcrumbs = useMemo(
     () => (report ? buildBreadcrumbs(report.root, report.indexRoot) : []),
@@ -423,6 +465,7 @@ export default function App() {
     setCleanupSelection({});
     setLastCleanup(null);
     setLastRestore(null);
+    setLoadedFromMemory(false);
     setProgress({
       root: path,
       filesScanned: 0,
@@ -436,6 +479,16 @@ export default function App() {
     try {
       const result = await invoke<ScanReport>("scan_path", { path });
       setReport(result);
+      setIndexSavedAt(Math.floor(Date.now() / 1000));
+      try {
+        const history = await invoke<StorageSnapshot[]>("snapshot_history", {
+          root: result.indexRoot,
+          limit: 12
+        });
+        setSnapshots(history);
+      } catch {
+        setSnapshots([]);
+      }
     } catch (reason) {
       const message =
         typeof reason === "string" ? reason : "Não foi possível analisar este caminho.";
@@ -536,6 +589,7 @@ export default function App() {
           bytes: result.movedBytes
         });
         setLastRestore(null);
+        setIndexSavedAt(Math.floor(Date.now() / 1000));
 
         try {
           const refreshed = await invoke<ScanReport>("browse_index", { path: report.root });
@@ -605,6 +659,7 @@ export default function App() {
           files: result.restoredFiles.length,
           bytes: result.restoredBytes
         });
+        setIndexSavedAt(Math.floor(Date.now() / 1000));
 
         try {
           const refreshed = await invoke<ScanReport>("browse_index", { path: report.root });
@@ -665,7 +720,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.3.1</span>
+            <span className="version-pill">v0.4.0</span>
           </div>
         </header>
 
@@ -719,7 +774,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.3.1</span>
+            <span className="version-pill">v0.4.0</span>
           </div>
         </header>
 
@@ -728,8 +783,8 @@ export default function App() {
             <span className="section-kicker">ANÁLISE LOCAL · WINDOWS</span>
             <h1>Indexar armazenamento</h1>
             <p>
-              Uma análise cria um índice temporário dos arquivos. A busca global e o drill-down
-              usam esse índice sem reanalisar o disco a cada clique.
+              Uma análise cria um índice local persistente. Na próxima abertura, a L.I.V.I.A. recupera
+              o último estado imediatamente e você decide quando quer atualizar a leitura física.
             </p>
           </div>
 
@@ -827,10 +882,46 @@ export default function App() {
         </div>
         <div className="engine-stats">
           <Gauge size={14} />
-          <span>{report.indexedFiles.toLocaleString("pt-BR")} arquivos no índice da sessão</span>
+          <span>{report.indexedFiles.toLocaleString("pt-BR")} arquivos no índice ativo</span>
         </div>
         {report.engine.fallbackReason ? (
           <p className="engine-fallback">{report.engine.fallbackReason}</p>
+        ) : null}
+      </section>
+
+      <section className={`memory-strip${loadedFromMemory ? " restored" : ""}`}>
+        <div className="memory-main">
+          <Database size={16} />
+          <div>
+            <strong>{loadedFromMemory ? "Memória restaurada" : "Memória local ativa"}</strong>
+            <span>
+              {loadedFromMemory
+                ? `Índice recuperado sem nova varredura · salvo em ${indexSavedAt ? formatSnapshotTime(indexSavedAt) : "momento desconhecido"}`
+                : `Estado atual salvo localmente${indexSavedAt ? ` · ${formatSnapshotTime(indexSavedAt)}` : ""}`}
+            </span>
+          </div>
+        </div>
+
+        <div className="memory-stats">
+          <Clock3 size={14} />
+          <span>{snapshots.length} snapshot{snapshots.length === 1 ? "" : "s"} deste local</span>
+          {snapshotDelta !== null ? (
+            <strong className={snapshotDelta > 0 ? "growth" : snapshotDelta < 0 ? "shrink" : ""}>
+              {formatSignedBytes(snapshotDelta)} desde o anterior
+            </strong>
+          ) : null}
+        </div>
+
+        {snapshots.length ? (
+          <div className="snapshot-mini-timeline" aria-label="Snapshots recentes">
+            {snapshots.slice(0, 4).map((snapshot, index) => (
+              <div className="snapshot-mini" key={snapshot.id}>
+                <span>{index === 0 ? "atual" : formatSnapshotTime(snapshot.createdAtSecs)}</span>
+                <strong>{formatBytes(snapshot.totalSize)}</strong>
+                <small>{snapshot.fileCount.toLocaleString("pt-BR")} arquivos</small>
+              </div>
+            ))}
+          </div>
         ) : null}
       </section>
 
@@ -1266,7 +1357,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.3.1 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
+        <span>v0.4.0 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
@@ -1300,6 +1391,8 @@ export default function App() {
         restoreBusy={Boolean(restoreBusyOperation)}
         lastCleanup={lastCleanup}
         lastRestore={lastRestore}
+        loadedFromMemory={loadedFromMemory}
+        snapshotCount={snapshots.length}
       />
     </main>
   );

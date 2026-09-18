@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     cmp::{Ordering as CmpOrdering, Reverse},
     collections::{BinaryHeap, HashMap, HashSet},
@@ -24,7 +24,7 @@ const PARTIAL_HASH_BYTES: usize = 64 * 1024;
 const FULL_HASH_BUFFER_BYTES: usize = ONE_MB as usize;
 const DUPLICATE_GROUP_LIMIT: usize = 100;
 
-#[derive(Debug, Serialize, Clone, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FileEntry {
     pub path: String,
@@ -74,7 +74,7 @@ pub struct Recommendation {
     pub confidence: u8,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanEngine {
     pub mode: String,
@@ -156,7 +156,8 @@ pub struct DuplicateReport {
     pub duration_ms: u128,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ScanIndex {
     pub root: String,
     pub engine: ScanEngine,
