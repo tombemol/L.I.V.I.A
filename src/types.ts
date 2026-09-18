@@ -38,6 +38,13 @@ export type Recommendation = {
   confidence: number;
 };
 
+export type ScanEngine = {
+  mode: string;
+  label: string;
+  accelerated: boolean;
+  fallbackReason: string | null;
+};
+
 export type ScanProgress = {
   root: string;
   filesScanned: number;
@@ -50,14 +57,23 @@ export type ScanProgress = {
 
 export type ScanReport = {
   root: string;
+  indexRoot: string;
   totalSize: number;
   fileCount: number;
   folderCount: number;
   skippedEntries: number;
   durationMs: number;
+  indexedFiles: number;
+  engine: ScanEngine;
   largestFiles: FileEntry[];
   extensions: ExtensionSummary[];
   directories: DirectorySummary[];
   duplicateCandidates: DuplicateCandidate[];
   recommendations: Recommendation[];
+};
+
+export type SearchResponse = {
+  total: number;
+  durationMs: number;
+  files: FileEntry[];
 };

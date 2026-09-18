@@ -1,11 +1,11 @@
 mod scanner;
 
-use scanner::{ScanProgress, ScanReport};
+use scanner::{ScanIndex, ScanProgress, ScanReport, SearchResponse};
 use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, RwLock,
     },
 };
 use tauri::{AppHandle, Emitter, State};
@@ -14,6 +14,7 @@ use tauri::{AppHandle, Emitter, State};
 struct ScanState {
     cancel: Arc<AtomicBool>,
     running: Arc<AtomicBool>,
+    index: Arc<RwLock<Option<ScanIndex>>>,
 }
 
 #[tauri::command]
@@ -30,6 +31,7 @@ async fn scan_path(
 
     let cancel = Arc::clone(&state.cancel);
     let running = Arc::clone(&state.running);
+    let index_state = Arc::clone(&state.index);
 
     let task = tauri::async_runtime::spawn_blocking(move || {
         scanner::scan(path, cancel, |progress: ScanProgress| {
@@ -41,9 +43,70 @@ async fn scan_path(
     running.store(false, Ordering::SeqCst);
 
     match result {
-        Ok(report) => report,
+        Ok(Ok(bundle)) => {
+            let report = bundle.report;
+            let mut guard = index_state
+                .write()
+                .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+            *guard = Some(bundle.index);
+            Ok(report)
+        }
+        Ok(Err(error)) => Err(format!("A análise foi interrompida: {error}")),
         Err(error) => Err(format!("A análise foi interrompida: {error}")),
     }
+}
+
+#[tauri::command]
+async fn browse_index(state: State<'_, ScanState>, path: String) -> Result<ScanReport, String> {
+    let index_state = Arc::clone(&state.index);
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let guard = index_state
+            .read()
+            .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+        let index = guard
+            .as_ref()
+            .ok_or_else(|| "Faça uma análise antes de navegar pelo índice.".to_string())?;
+        scanner::browse_index(index, path)
+    })
+    .await
+    .map_err(|error| format!("Falha ao consultar o índice: {error}"))?
+}
+
+#[tauri::command]
+async fn search_index(
+    state: State<'_, ScanState>,
+    scope: String,
+    query: String,
+    extension: String,
+    min_size: u64,
+    sort_key: String,
+    sort_direction: String,
+    limit: usize,
+) -> Result<SearchResponse, String> {
+    let index_state = Arc::clone(&state.index);
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let guard = index_state
+            .read()
+            .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+        let index = guard
+            .as_ref()
+            .ok_or_else(|| "Faça uma análise antes de pesquisar.".to_string())?;
+
+        Ok(scanner::search_index(
+            index,
+            scope,
+            query,
+            extension,
+            min_size,
+            sort_key,
+            sort_direction,
+            limit,
+        ))
+    })
+    .await
+    .map_err(|error| format!("Falha ao pesquisar o índice: {error}"))?
 }
 
 #[tauri::command]
@@ -99,6 +162,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             scan_path,
+            browse_index,
+            search_index,
             cancel_scan,
             system_drive,
             open_in_explorer

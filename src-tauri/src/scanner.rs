@@ -1,7 +1,7 @@
 use serde::Serialize;
 use std::{
     cmp::{Ordering as CmpOrdering, Reverse},
-    collections::{BinaryHeap, HashMap},
+    collections::{BinaryHeap, HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
     sync::{
@@ -17,6 +17,7 @@ const ONE_GB: u64 = 1024 * ONE_MB;
 const LARGEST_LIMIT: usize = 500;
 const RECOMMENDATION_LIMIT: usize = 50;
 const PROGRESS_INTERVAL_MS: u128 = 120;
+const SEARCH_LIMIT_MAX: usize = 500;
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -68,15 +69,27 @@ pub struct Recommendation {
     pub confidence: u8,
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanEngine {
+    pub mode: String,
+    pub label: String,
+    pub accelerated: bool,
+    pub fallback_reason: Option<String>,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanReport {
     pub root: String,
+    pub index_root: String,
     pub total_size: u64,
     pub file_count: u64,
     pub folder_count: u64,
     pub skipped_entries: u64,
     pub duration_ms: u128,
+    pub indexed_files: usize,
+    pub engine: ScanEngine,
     pub largest_files: Vec<FileEntry>,
     pub extensions: Vec<ExtensionSummary>,
     pub directories: Vec<DirectorySummary>,
@@ -94,6 +107,26 @@ pub struct ScanProgress {
     pub bytes_scanned: u64,
     pub elapsed_ms: u128,
     pub current_path: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchResponse {
+    pub total: usize,
+    pub duration_ms: u128,
+    pub files: Vec<FileEntry>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ScanIndex {
+    pub root: String,
+    pub engine: ScanEngine,
+    pub files: Vec<FileEntry>,
+}
+
+pub struct ScanBundle {
+    pub report: ScanReport,
+    pub index: ScanIndex,
 }
 
 #[derive(Default)]
@@ -123,36 +156,177 @@ impl PartialOrd for RankedFile {
     }
 }
 
+struct ReportAccumulator {
+    root: PathBuf,
+    total_size: u64,
+    file_count: u64,
+    ordinal: u64,
+    largest: BinaryHeap<Reverse<RankedFile>>,
+    extension_buckets: HashMap<String, Bucket>,
+    directory_buckets: HashMap<String, Bucket>,
+    recommendations: Vec<Recommendation>,
+}
+
+impl ReportAccumulator {
+    fn new(root: PathBuf) -> Self {
+        Self {
+            root,
+            total_size: 0,
+            file_count: 0,
+            ordinal: 0,
+            largest: BinaryHeap::new(),
+            extension_buckets: HashMap::new(),
+            directory_buckets: HashMap::new(),
+            recommendations: Vec::new(),
+        }
+    }
+
+    fn push(&mut self, file: FileEntry) {
+        self.total_size = self.total_size.saturating_add(file.size);
+        self.file_count += 1;
+        self.ordinal += 1;
+
+        let extension_bucket = self
+            .extension_buckets
+            .entry(file.extension.clone())
+            .or_default();
+        extension_bucket.size = extension_bucket.size.saturating_add(file.size);
+        extension_bucket.count += 1;
+
+        let directory_name = top_level_name(&self.root, Path::new(&file.path));
+        let directory_bucket = self.directory_buckets.entry(directory_name).or_default();
+        directory_bucket.size = directory_bucket.size.saturating_add(file.size);
+        directory_bucket.count += 1;
+
+        keep_largest(&mut self.largest, file.clone(), self.ordinal);
+
+        if let Some(recommendation) = recommend(&file) {
+            self.recommendations.push(recommendation);
+            if self.recommendations.len() > RECOMMENDATION_LIMIT * 4 {
+                sort_and_trim_recommendations(&mut self.recommendations);
+            }
+        }
+    }
+
+    fn finish(
+        mut self,
+        folder_count: u64,
+        skipped_entries: u64,
+        duration_ms: u128,
+        indexed_files: usize,
+        engine: ScanEngine,
+        index_root: String,
+    ) -> ScanReport {
+        let mut largest_files: Vec<_> = self
+            .largest
+            .into_iter()
+            .map(|Reverse(item)| item.file)
+            .collect();
+        largest_files.sort_by(|a, b| b.size.cmp(&a.size));
+        let duplicate_candidates = find_duplicate_candidates(&largest_files);
+
+        sort_and_trim_recommendations(&mut self.recommendations);
+
+        let mut extensions: Vec<_> = self
+            .extension_buckets
+            .into_iter()
+            .map(|(extension, bucket)| ExtensionSummary {
+                extension,
+                size: bucket.size,
+                count: bucket.count,
+            })
+            .collect();
+        extensions.sort_by(|a, b| b.size.cmp(&a.size));
+        extensions.truncate(20);
+
+        let mut directories: Vec<_> = self
+            .directory_buckets
+            .into_iter()
+            .map(|(name, bucket)| {
+                let path = if name == "(raiz)" {
+                    self.root.clone()
+                } else {
+                    self.root.join(&name)
+                };
+
+                DirectorySummary {
+                    name,
+                    path: path.to_string_lossy().to_string(),
+                    size: bucket.size,
+                    file_count: bucket.count,
+                }
+            })
+            .collect();
+        directories.sort_by(|a, b| b.size.cmp(&a.size));
+
+        ScanReport {
+            root: self.root.to_string_lossy().to_string(),
+            index_root,
+            total_size: self.total_size,
+            file_count: self.file_count,
+            folder_count,
+            skipped_entries,
+            duration_ms,
+            indexed_files,
+            engine,
+            largest_files,
+            extensions,
+            directories,
+            duplicate_candidates,
+            recommendations: self.recommendations,
+        }
+    }
+}
+
 pub fn scan<F>(
     input: String,
     cancel: Arc<AtomicBool>,
     mut on_progress: F,
-) -> Result<ScanReport, String>
+) -> Result<ScanBundle, String>
+where
+    F: FnMut(ScanProgress),
+{
+    let root = PathBuf::from(&input);
+    validate_root(&root)?;
+
+    #[cfg(target_os = "windows")]
+    {
+        if drive_letter_root(&root).is_some() {
+            match scan_mft(root.clone(), Arc::clone(&cancel), &mut on_progress) {
+                Ok(bundle) => return Ok(bundle),
+                Err(mft_error) => {
+                    return scan_walkdir(
+                        root,
+                        cancel,
+                        &mut on_progress,
+                        Some(format!(
+                            "MFT indisponível nesta execução ({mft_error}). Foi usado o scanner compatível."
+                        )),
+                    );
+                }
+            }
+        }
+    }
+
+    scan_walkdir(root, cancel, &mut on_progress, None)
+}
+
+fn scan_walkdir<F>(
+    root: PathBuf,
+    cancel: Arc<AtomicBool>,
+    on_progress: &mut F,
+    fallback_reason: Option<String>,
+) -> Result<ScanBundle, String>
 where
     F: FnMut(ScanProgress),
 {
     let started = Instant::now();
     let now = SystemTime::now();
-    let root = PathBuf::from(&input);
-
-    if !root.exists() {
-        return Err("O caminho selecionado não existe.".to_string());
-    }
-
-    if !root.is_dir() {
-        return Err("Selecione uma pasta ou unidade, não um arquivo isolado.".to_string());
-    }
-
     let display_root = root.to_string_lossy().to_string();
-    let mut total_size = 0_u64;
-    let mut file_count = 0_u64;
+    let mut report = ReportAccumulator::new(root.clone());
+    let mut index_files = Vec::<FileEntry>::new();
     let mut folder_count = 0_u64;
     let mut skipped_entries = 0_u64;
-    let mut ordinal = 0_u64;
-    let mut largest = BinaryHeap::<Reverse<RankedFile>>::new();
-    let mut extension_buckets = HashMap::<String, Bucket>::new();
-    let mut directory_buckets = HashMap::<String, Bucket>::new();
-    let mut recommendations = Vec::<Recommendation>::new();
     let mut last_progress = Instant::now();
 
     let walker = WalkDir::new(&root)
@@ -180,12 +354,12 @@ where
             }
 
             emit_progress_if_needed(
-                &mut on_progress,
+                on_progress,
                 &display_root,
-                file_count,
+                report.file_count,
                 folder_count,
                 skipped_entries,
-                total_size,
+                report.total_size,
                 started,
                 &mut last_progress,
                 entry.path(),
@@ -205,123 +379,315 @@ where
             }
         };
 
-        let size = metadata.len();
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().to_string();
-        let extension = normalized_extension(path);
-        let modified = metadata.modified().ok();
-        let modified_secs = modified
-            .and_then(|value| value.duration_since(UNIX_EPOCH).ok())
-            .map(|duration| duration.as_secs());
-        let age_days = modified.and_then(|value| age_in_days(value, now));
-
-        total_size = total_size.saturating_add(size);
-        file_count += 1;
-        ordinal += 1;
-
-        let extension_bucket = extension_buckets.entry(extension.clone()).or_default();
-        extension_bucket.size = extension_bucket.size.saturating_add(size);
-        extension_bucket.count += 1;
-
-        let directory_name = top_level_name(&root, path);
-        let directory_bucket = directory_buckets.entry(directory_name).or_default();
-        directory_bucket.size = directory_bucket.size.saturating_add(size);
-        directory_bucket.count += 1;
-
-        let file = FileEntry {
-            path: path.to_string_lossy().to_string(),
-            name,
-            size,
-            extension,
-            modified_secs,
-            age_days,
-        };
-
-        keep_largest(&mut largest, file.clone(), ordinal);
-
-        if let Some(recommendation) = recommend(&file) {
-            recommendations.push(recommendation);
-
-            if recommendations.len() > RECOMMENDATION_LIMIT * 4 {
-                sort_and_trim_recommendations(&mut recommendations);
-            }
-        }
+        let file = file_entry_from_metadata(entry.path(), &metadata, now);
+        report.push(file.clone());
+        index_files.push(file);
 
         emit_progress_if_needed(
-            &mut on_progress,
+            on_progress,
             &display_root,
-            file_count,
+            report.file_count,
             folder_count,
             skipped_entries,
-            total_size,
+            report.total_size,
             started,
             &mut last_progress,
-            path,
+            entry.path(),
         );
     }
 
     on_progress(ScanProgress {
         root: display_root.clone(),
-        files_scanned: file_count,
+        files_scanned: report.file_count,
         folders_scanned: folder_count,
         skipped_entries,
-        bytes_scanned: total_size,
+        bytes_scanned: report.total_size,
         elapsed_ms: started.elapsed().as_millis(),
         current_path: display_root.clone(),
     });
 
-    let mut largest_files: Vec<_> = largest
-        .into_iter()
-        .map(|Reverse(item)| item.file)
-        .collect();
-    largest_files.sort_by(|a, b| b.size.cmp(&a.size));
-    let duplicate_candidates = find_duplicate_candidates(&largest_files);
-
-    sort_and_trim_recommendations(&mut recommendations);
-
-    let mut extensions: Vec<_> = extension_buckets
-        .into_iter()
-        .map(|(extension, bucket)| ExtensionSummary {
-            extension,
-            size: bucket.size,
-            count: bucket.count,
-        })
-        .collect();
-    extensions.sort_by(|a, b| b.size.cmp(&a.size));
-    extensions.truncate(20);
-
-    let mut directories: Vec<_> = directory_buckets
-        .into_iter()
-        .map(|(name, bucket)| {
-            let path = if name == "(raiz)" {
-                root.clone()
-            } else {
-                root.join(&name)
-            };
-
-            DirectorySummary {
-                name,
-                path: path.to_string_lossy().to_string(),
-                size: bucket.size,
-                file_count: bucket.count,
-            }
-        })
-        .collect();
-    directories.sort_by(|a, b| b.size.cmp(&a.size));
-
-    Ok(ScanReport {
-        root: display_root,
-        total_size,
-        file_count,
+    let engine = ScanEngine {
+        mode: "walkdir-index".to_string(),
+        label: "Índice local".to_string(),
+        accelerated: false,
+        fallback_reason,
+    };
+    let indexed_files = index_files.len();
+    let scan_report = report.finish(
         folder_count,
         skipped_entries,
-        duration_ms: started.elapsed().as_millis(),
-        largest_files,
-        extensions,
-        directories,
-        duplicate_candidates,
-        recommendations,
+        started.elapsed().as_millis(),
+        indexed_files,
+        engine.clone(),
+        display_root.clone(),
+    );
+
+    Ok(ScanBundle {
+        report: scan_report,
+        index: ScanIndex {
+            root: display_root,
+            engine,
+            files: index_files,
+        },
     })
+}
+
+#[cfg(target_os = "windows")]
+fn scan_mft<F>(
+    root: PathBuf,
+    cancel: Arc<AtomicBool>,
+    on_progress: &mut F,
+) -> Result<ScanBundle, String>
+where
+    F: FnMut(ScanProgress),
+{
+    use usn_journal_rs::volume::Volume;
+
+    let drive_letter =
+        drive_letter_root(&root).ok_or_else(|| "o caminho não é uma raiz de unidade".to_string())?;
+    let volume = Volume::from_drive_letter(drive_letter).map_err(|error| error.to_string())?;
+    let mft = volume.mft();
+    let mut resolver = volume.path_resolver_with_cache();
+
+    let started = Instant::now();
+    let now = SystemTime::now();
+    let display_root = root.to_string_lossy().to_string();
+    let mut report = ReportAccumulator::new(root.clone());
+    let mut index_files = Vec::<FileEntry>::new();
+    let mut folder_count = 0_u64;
+    let mut skipped_entries = 0_u64;
+    let mut last_progress = Instant::now();
+
+    for result in mft.iter() {
+        if cancel.load(AtomicOrdering::Relaxed) {
+            return Err("Análise cancelada.".to_string());
+        }
+
+        let entry = match result {
+            Ok(entry) => entry,
+            Err(_) => {
+                skipped_entries += 1;
+                continue;
+            }
+        };
+
+        let path = match resolver.resolve_path(&entry) {
+            Some(path) => path,
+            None => {
+                skipped_entries += 1;
+                continue;
+            }
+        };
+
+        if entry.is_dir() {
+            if path != root {
+                folder_count += 1;
+            }
+
+            emit_progress_if_needed(
+                on_progress,
+                &display_root,
+                report.file_count,
+                folder_count,
+                skipped_entries,
+                report.total_size,
+                started,
+                &mut last_progress,
+                &path,
+            );
+            continue;
+        }
+
+        let metadata = match fs::metadata(&path) {
+            Ok(metadata) if metadata.is_file() => metadata,
+            _ => {
+                skipped_entries += 1;
+                continue;
+            }
+        };
+
+        let file = file_entry_from_metadata(&path, &metadata, now);
+        report.push(file.clone());
+        index_files.push(file);
+
+        emit_progress_if_needed(
+            on_progress,
+            &display_root,
+            report.file_count,
+            folder_count,
+            skipped_entries,
+            report.total_size,
+            started,
+            &mut last_progress,
+            &path,
+        );
+    }
+
+    if index_files.is_empty() {
+        return Err("a enumeração MFT não retornou arquivos".to_string());
+    }
+
+    on_progress(ScanProgress {
+        root: display_root.clone(),
+        files_scanned: report.file_count,
+        folders_scanned: folder_count,
+        skipped_entries,
+        bytes_scanned: report.total_size,
+        elapsed_ms: started.elapsed().as_millis(),
+        current_path: display_root.clone(),
+    });
+
+    let engine = ScanEngine {
+        mode: "ntfs-mft".to_string(),
+        label: "NTFS / MFT".to_string(),
+        accelerated: true,
+        fallback_reason: None,
+    };
+    let indexed_files = index_files.len();
+    let scan_report = report.finish(
+        folder_count,
+        skipped_entries,
+        started.elapsed().as_millis(),
+        indexed_files,
+        engine.clone(),
+        display_root.clone(),
+    );
+
+    Ok(ScanBundle {
+        report: scan_report,
+        index: ScanIndex {
+            root: display_root,
+            engine,
+            files: index_files,
+        },
+    })
+}
+
+pub fn browse_index(index: &ScanIndex, path: String) -> Result<ScanReport, String> {
+    let started = Instant::now();
+    let scope = PathBuf::from(&path);
+
+    if !is_scope_inside_root(&scope, Path::new(&index.root)) {
+        return Err("Este caminho não pertence ao índice atual.".to_string());
+    }
+
+    let mut report = ReportAccumulator::new(scope.clone());
+    let mut directories = HashSet::<PathBuf>::new();
+
+    for file in &index.files {
+        let file_path = Path::new(&file.path);
+        if !is_scope_inside_root(file_path, &scope) {
+            continue;
+        }
+
+        if let Some(parent) = file_path.parent() {
+            let mut cursor = parent.to_path_buf();
+            while is_scope_inside_root(&cursor, &scope) && cursor != scope {
+                directories.insert(cursor.clone());
+                let Some(next) = cursor.parent() else {
+                    break;
+                };
+                cursor = next.to_path_buf();
+            }
+        }
+
+        report.push(file.clone());
+    }
+
+    if report.file_count == 0 {
+        return Err("Nenhum arquivo do índice foi encontrado neste caminho.".to_string());
+    }
+
+    Ok(report.finish(
+        directories.len() as u64,
+        0,
+        started.elapsed().as_millis(),
+        index.files.len(),
+        index.engine.clone(),
+        index.root.clone(),
+    ))
+}
+
+pub fn search_index(
+    index: &ScanIndex,
+    scope: String,
+    query: String,
+    extension: String,
+    min_size: u64,
+    sort_key: String,
+    sort_direction: String,
+    limit: usize,
+) -> SearchResponse {
+    let started = Instant::now();
+    let scope_path = PathBuf::from(scope);
+    let query = query.trim().to_string();
+    let mut matches: Vec<&FileEntry> = index
+        .files
+        .iter()
+        .filter(|file| {
+            is_scope_inside_root(Path::new(&file.path), &scope_path)
+                && file.size >= min_size
+                && (extension == "all" || file.extension == extension)
+                && (query.is_empty()
+                    || contains_case_insensitive(&file.path, &query)
+                    || contains_case_insensitive(&file.name, &query))
+        })
+        .collect();
+
+    matches.sort_by(|a, b| {
+        let ordering = match sort_key.as_str() {
+            "name" => a.name.cmp(&b.name),
+            "extension" => a.extension.cmp(&b.extension),
+            "age" => a.age_days.unwrap_or(0).cmp(&b.age_days.unwrap_or(0)),
+            _ => a.size.cmp(&b.size),
+        };
+
+        if sort_direction == "asc" {
+            ordering
+        } else {
+            ordering.reverse()
+        }
+    });
+
+    let total = matches.len();
+    let files = matches
+        .into_iter()
+        .take(limit.clamp(1, SEARCH_LIMIT_MAX))
+        .cloned()
+        .collect();
+
+    SearchResponse {
+        total,
+        duration_ms: started.elapsed().as_millis(),
+        files,
+    }
+}
+
+fn validate_root(root: &Path) -> Result<(), String> {
+    if !root.exists() {
+        return Err("O caminho selecionado não existe.".to_string());
+    }
+    if !root.is_dir() {
+        return Err("Selecione uma pasta ou unidade, não um arquivo isolado.".to_string());
+    }
+    Ok(())
+}
+
+fn file_entry_from_metadata(path: &Path, metadata: &fs::Metadata, now: SystemTime) -> FileEntry {
+    let modified = metadata.modified().ok();
+    FileEntry {
+        path: path.to_string_lossy().to_string(),
+        name: path
+            .file_name()
+            .map(|value| value.to_string_lossy().to_string())
+            .unwrap_or_else(|| path.to_string_lossy().to_string()),
+        size: metadata.len(),
+        extension: normalized_extension(path),
+        modified_secs: modified
+            .and_then(|value| value.duration_since(UNIX_EPOCH).ok())
+            .map(|duration| duration.as_secs()),
+        age_days: modified.and_then(|value| age_in_days(value, now)),
+    }
 }
 
 fn find_duplicate_candidates(files: &[FileEntry]) -> Vec<DuplicateCandidate> {
@@ -355,11 +721,7 @@ fn find_duplicate_candidates(files: &[FileEntry]) -> Vec<DuplicateCandidate> {
     candidates
 }
 
-fn keep_largest(
-    heap: &mut BinaryHeap<Reverse<RankedFile>>,
-    file: FileEntry,
-    ordinal: u64,
-) {
+fn keep_largest(heap: &mut BinaryHeap<Reverse<RankedFile>>, file: FileEntry, ordinal: u64) {
     let item = RankedFile {
         size: file.size,
         ordinal,
@@ -447,6 +809,42 @@ fn top_level_name(root: &Path, path: &Path) -> String {
     first
         .map(|component| component.as_os_str().to_string_lossy().to_string())
         .unwrap_or_else(|| "(raiz)".to_string())
+}
+
+fn is_scope_inside_root(candidate: &Path, scope: &Path) -> bool {
+    candidate == scope || candidate.strip_prefix(scope).is_ok()
+}
+
+fn contains_case_insensitive(haystack: &str, needle: &str) -> bool {
+    if needle.is_empty() {
+        return true;
+    }
+
+    if haystack.is_ascii() && needle.is_ascii() {
+        let haystack = haystack.as_bytes();
+        let needle = needle.as_bytes();
+        return haystack.windows(needle.len()).any(|window| {
+            window
+                .iter()
+                .zip(needle)
+                .all(|(left, right)| left.eq_ignore_ascii_case(right))
+        });
+    }
+
+    haystack.to_lowercase().contains(&needle.to_lowercase())
+}
+
+#[cfg(target_os = "windows")]
+fn drive_letter_root(path: &Path) -> Option<char> {
+    let raw = path.to_string_lossy();
+    let trimmed = raw.trim_end_matches(['\\', '/']);
+
+    if trimmed.len() != 2 || !trimmed.ends_with(':') {
+        return None;
+    }
+
+    let drive = trimmed.chars().next()?;
+    drive.is_ascii_alphabetic().then(|| drive.to_ascii_uppercase())
 }
 
 fn recommend(file: &FileEntry) -> Option<Recommendation> {
