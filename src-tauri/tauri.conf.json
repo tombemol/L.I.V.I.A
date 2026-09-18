@@ -27,7 +27,12 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/icon.ico"
+    ],
     "category": "Utility",
     "shortDescription": "Análise visual e inteligente de armazenamento",
     "longDescription": "Analisa pastas e unidades no Windows, visualiza o uso do armazenamento e sugere itens que merecem revisão."

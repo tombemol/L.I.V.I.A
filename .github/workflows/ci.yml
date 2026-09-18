@@ -44,6 +44,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: --bundles nsis,msi
+          args: --bundles nsis
           uploadWorkflowArtifacts: true
           workflowArtifactNamePattern: "LIVIA-v[version]-[platform]-[arch]-[bundle]"

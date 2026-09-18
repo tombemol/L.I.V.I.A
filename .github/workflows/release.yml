@@ -50,4 +50,4 @@ jobs:
             - nenhum arquivo é excluído nesta versão.
           releaseDraft: false
           prerelease: true
-          args: --bundles nsis,msi
+          args: --bundles nsis
