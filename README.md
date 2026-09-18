@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.2.4--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.3.0--dev-5969e8?style=flat-square)
 
 </div>
 
@@ -90,7 +90,7 @@ flowchart LR
 | Triagem inicial de duplicatas | ✅ |
 | Hash parcial + confirmação completa | ✅ v0.2.2 |
 | Espaço recuperável confirmado | ✅ v0.2.2 |
-| Exclusão automática | ❌ não existe |
+| Limpeza assistida para a Lixeira | ✅ v0.3.0 |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -163,8 +163,8 @@ A v0.2.4 corrige um problema de empacotamento do asset da personagem: o arquivo 
 - [x] restaurar a tira de expressões no README;
 - [x] manter os estados **Normal, Feliz, Explicando, Julgando, Preocupada e Escaneando**;
 - [x] validar o asset antes da release;
-- [ ] validar CI Windows e instalador;
-- [ ] publicar v0.2.4.
+- [x] validar CI Windows e instalador;
+- [x] publicar v0.2.4.
 
 ## v0.2.3 — Visualizações + Lívia
 
@@ -188,6 +188,38 @@ A área de análise agora pode alternar entre visualizações sem recalcular o �
 - [x] suporte responsivo e integração com os temas claro e escuro;
 - [x] validar CI Windows e instalador;
 - [x] publicar v0.2.3.
+
+## v0.3.0 — Limpeza assistida
+
+A L.I.V.I.A. agora sai do modo “eu só observo a bagunça” e passa a ajudar na limpeza sem ganhar um lança-chamas apontado para o sistema de arquivos.
+
+### Fluxo seguro
+
+- [x] adicionar arquivos individualmente à bandeja de limpeza;
+- [x] revisar quantidade e espaço antes de qualquer ação;
+- [x] exigir uma segunda confirmação;
+- [x] conferir se o arquivo ainda pertence ao índice;
+- [x] conferir novamente tamanho e tipo antes de mover;
+- [x] preservar arquivos que mudaram desde a indexação;
+- [x] bloquear a pasta do Windows e o executável atual;
+- [x] mover para a Lixeira do sistema, nunca excluir permanentemente;
+- [x] atualizar o índice em memória depois da operação;
+- [x] manter histórico local resumido sem persistir caminhos de arquivos;
+- [x] fazer a Lívia reagir à seleção, execução e conclusão da limpeza;
+- [ ] restauração direta pela interface.
+
+```mermaid
+flowchart LR
+    I[Índice da sessão] --> S[Usuário seleciona arquivos]
+    S --> T[Bandeja de limpeza]
+    T --> R[Revisão]
+    R --> C[Segunda confirmação]
+    C --> V{Validação backend}
+    V -->|mudou / protegido| P[Preservar]
+    V -->|válido| L[Lixeira do Windows]
+    L --> U[Atualizar índice]
+    U --> H[Histórico resumido]
+```
 
 ## Arquitetura
 
@@ -250,7 +282,9 @@ O índice não é persistido entre execuções ainda. Persistência incremental 
 
 ## Segurança
 
-A L.I.V.I.A. continua **somente leitura**.
+A análise, a indexação, a busca, o MFT e a confirmação de duplicatas continuam **somente leitura**.
+
+A partir da **v0.3.0**, existe uma ação explícita de limpeza assistida. Ela só opera sobre arquivos que o usuário selecionou, exige revisão e confirmação, valida novamente tamanho e tipo do arquivo antes da ação e usa a **Lixeira do sistema** em vez de exclusão permanente. Arquivos dentro da pasta do Windows e o executável atual da L.I.V.I.A. são bloqueados pelo backend.
 
 O caminho MFT também é somente leitura. Se ele não estiver disponível, o aplicativo não tenta “consertar” permissões, não altera políticas do Windows e não cria serviço privilegiado.
 
@@ -314,11 +348,13 @@ flowchart TD
 - ✅ explicações contextuais de arquivos e reações por estado.
 
 ### v0.3 — Limpeza assistida
-- seleção múltipla;
-- prévia do espaço recuperável;
-- lixeira em vez de exclusão direta;
-- histórico;
-- desfazer quando possível.
+- ✅ seleção múltipla por bandeja de limpeza;
+- ✅ prévia do espaço selecionado;
+- ✅ Lixeira em vez de exclusão direta;
+- ✅ validação do arquivo novamente antes de mover;
+- ✅ proteção da pasta do Windows e do executável em uso;
+- ✅ histórico local resumido das operações;
+- ⏳ desfazer/restaurar diretamente pela L.I.V.I.A. quando a API permitir identificação segura do item na Lixeira.
 
 ### v0.4 — Persistência e mudanças
 - snapshots locais;

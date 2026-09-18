@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   Sparkles,
   Sun,
+  Trash2,
   X,
   Zap
 } from "lucide-react";
@@ -32,8 +33,11 @@ import { StorageTreemap } from "./components/StorageTreemap";
 import { ExtensionList } from "./components/ExtensionList";
 import { DistributionPie } from "./components/DistributionPie";
 import { LiviaAssistant } from "./components/LiviaAssistant";
+import { CleanupTray } from "./components/CleanupTray";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
 import type {
+  CleanupHistoryEntry,
+  CleanupResult,
   DuplicateProgress,
   DuplicateReport,
   FileEntry,
@@ -141,6 +145,25 @@ function formatModified(seconds: number | null) {
   return new Date(seconds * 1000).toLocaleString("pt-BR");
 }
 
+function recommendationToFile(
+  item: ScanReport["recommendations"][number]
+): FileEntry {
+  const dot = item.name.lastIndexOf(".");
+  const extension =
+    dot > 0 && dot < item.name.length - 1
+      ? item.name.slice(dot).toLocaleLowerCase("pt-BR")
+      : "sem extensão";
+
+  return {
+    path: item.path,
+    name: item.name,
+    size: item.size,
+    extension,
+    modifiedSecs: null,
+    ageDays: item.ageDays
+  };
+}
+
 export default function App() {
   const [report, setReport] = useState<ScanReport | null>(null);
   const [busy, setBusy] = useState(false);
@@ -164,6 +187,17 @@ export default function App() {
   const [duplicateBusy, setDuplicateBusy] = useState(false);
   const [duplicateProgress, setDuplicateProgress] = useState<DuplicateProgress | null>(null);
   const [duplicateReport, setDuplicateReport] = useState<DuplicateReport | null>(null);
+  const [cleanupSelection, setCleanupSelection] = useState<Record<string, FileEntry>>({});
+  const [cleanupBusy, setCleanupBusy] = useState(false);
+  const [lastCleanup, setLastCleanup] = useState<{ files: number; bytes: number } | null>(null);
+  const [cleanupHistory, setCleanupHistory] = useState<CleanupHistoryEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem("livia-cleanup-history");
+      return saved ? (JSON.parse(saved) as CleanupHistoryEntry[]).slice(0, 10) : [];
+    } catch {
+      return [];
+    }
+  });
   const [folderView, setFolderView] = useState<FolderView>(() =>
     localStorage.getItem("livia-folder-view") === "pie" ? "pie" : "treemap"
   );
@@ -267,6 +301,11 @@ export default function App() {
     [report]
   );
 
+  const cleanupFiles = useMemo(
+    () => Object.values(cleanupSelection),
+    [cleanupSelection]
+  );
+
   const breadcrumbs = useMemo(
     () => (report ? buildBreadcrumbs(report.root, report.indexRoot) : []),
     [report]
@@ -274,6 +313,25 @@ export default function App() {
 
   function toggleTheme() {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }
+
+  function toggleCleanupFile(file: FileEntry) {
+    if (!cleanupSelection[file.path] && cleanupFiles.length >= 200) {
+      setError("A limpeza assistida aceita no máximo 200 arquivos por operação.");
+      return;
+    }
+
+    setCleanupSelection((current) => {
+      const next = { ...current };
+      if (next[file.path]) delete next[file.path];
+      else next[file.path] = file;
+      return next;
+    });
+    setLastCleanup(null);
+  }
+
+  function clearCleanupSelection() {
+    setCleanupSelection({});
   }
 
   function changeSort(key: SortKey) {
@@ -310,6 +368,8 @@ export default function App() {
     setDuplicateBusy(false);
     setDuplicateProgress(null);
     setDuplicateReport(null);
+    setCleanupSelection({});
+    setLastCleanup(null);
     setProgress({
       root: path,
       filesScanned: 0,
@@ -372,6 +432,82 @@ export default function App() {
     }
   }
 
+  async function executeCleanup() {
+    if (!report || cleanupBusy || !cleanupFiles.length) return;
+
+    setCleanupBusy(true);
+    setError(null);
+    setLastCleanup(null);
+
+    try {
+      const result = await invoke<CleanupResult>("move_to_trash", {
+        paths: cleanupFiles.map((file) => file.path)
+      });
+
+      const movedPaths = new Set(result.movedFiles.map((file) => file.path));
+      setCleanupSelection((current) =>
+        Object.fromEntries(
+          Object.entries(current).filter(([path]) => !movedPaths.has(path))
+        )
+      );
+
+      if (result.movedFiles.length) {
+        setSelectedFile(null);
+      }
+
+      setDuplicateReport(null);
+      setDuplicateProgress(null);
+
+      if (result.movedFiles.length) {
+        const entry: CleanupHistoryEntry = {
+          id: `${Date.now()}-${result.movedFiles.length}`,
+          timestamp: Date.now(),
+          movedFiles: result.movedFiles.length,
+          movedBytes: result.movedBytes,
+          failedFiles: result.failed.length
+        };
+
+        setCleanupHistory((current) => {
+          const next = [entry, ...current].slice(0, 10);
+          localStorage.setItem("livia-cleanup-history", JSON.stringify(next));
+          return next;
+        });
+
+        setLastCleanup({
+          files: result.movedFiles.length,
+          bytes: result.movedBytes
+        });
+
+        try {
+          const refreshed = await invoke<ScanReport>("browse_index", { path: report.root });
+          setReport(refreshed);
+        } catch {
+          try {
+            const rootReport = await invoke<ScanReport>("browse_index", { path: report.indexRoot });
+            setReport(rootReport);
+          } catch {
+            setReport(null);
+          }
+        }
+      }
+
+      if (result.failed.length) {
+        const firstReason = result.failed[0]?.reason;
+        setError(
+          `${result.failed.length} arquivo(s) foram preservados porque mudaram, estão protegidos ou não puderam ser enviados à Lixeira.${firstReason ? ` Exemplo: ${firstReason}` : ""}`
+        );
+      }
+    } catch (reason) {
+      setError(
+        typeof reason === "string"
+          ? reason
+          : "Não foi possível concluir a limpeza assistida."
+      );
+    } finally {
+      setCleanupBusy(false);
+    }
+  }
+
   async function verifyDuplicates() {
     if (!report || duplicateBusy) return;
 
@@ -401,7 +537,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.2.4</span>
+            <span className="version-pill">v0.3.0</span>
           </div>
         </header>
 
@@ -455,7 +591,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.2.4</span>
+            <span className="version-pill">v0.3.0</span>
           </div>
         </header>
 
@@ -492,8 +628,8 @@ export default function App() {
           <div className="privacy-line">
             <ShieldCheck size={16} />
             <div>
-              <strong>Somente leitura</strong>
-              <span>O índice existe apenas em memória e não envia dados para fora do computador.</span>
+              <strong>Análise local e limpeza sob confirmação</strong>
+              <span>Indexação e busca não alteram arquivos. A limpeza só acontece depois da sua seleção e envia itens para a Lixeira do Windows.</span>
             </div>
           </div>
 
@@ -781,9 +917,19 @@ export default function App() {
                   <div><dt>Modificado</dt><dd>{formatModified(selectedFile.modifiedSecs)}</dd></div>
                   <div><dt>Idade</dt><dd>{formatAge(selectedFile.ageDays)}</dd></div>
                 </dl>
-                <button className="primary-action detail-action" type="button" onClick={() => openInExplorer(selectedFile.path)}>
-                  <ExternalLink size={15} /> Mostrar no Explorer
-                </button>
+                <div className="detail-actions">
+                  <button className="primary-action detail-action" type="button" onClick={() => openInExplorer(selectedFile.path)}>
+                    <ExternalLink size={15} /> Mostrar no Explorer
+                  </button>
+                  <button
+                    className={`secondary-action detail-action cleanup-select${cleanupSelection[selectedFile.path] ? " selected" : ""}`}
+                    type="button"
+                    onClick={() => toggleCleanupFile(selectedFile)}
+                  >
+                    <Trash2 size={15} />
+                    {cleanupSelection[selectedFile.path] ? "Remover da limpeza" : "Adicionar à limpeza"}
+                  </button>
+                </div>
               </>
             ) : (
               <div className="detail-empty">
@@ -954,6 +1100,14 @@ export default function App() {
                 <div className="recommendation-meta">
                   <strong>{formatBytes(item.size)}</strong>
                   <span>{formatAge(item.ageDays)}</span>
+                  <button
+                    className={`recommendation-action${cleanupSelection[item.path] ? " selected" : ""}`}
+                    type="button"
+                    onClick={() => toggleCleanupFile(recommendationToFile(item))}
+                  >
+                    <Trash2 size={12} />
+                    {cleanupSelection[item.path] ? "Selecionado" : "Limpar"}
+                  </button>
                 </div>
               </div>
             ))}
@@ -971,10 +1125,25 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.2.4 · índice de sessão · somente leitura.</span>
+        <span>v0.3.0 · índice de sessão · limpeza assistida envia somente para a Lixeira.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
+
+      <CleanupTray
+        files={cleanupFiles}
+        busy={cleanupBusy}
+        history={cleanupHistory}
+        onRemove={(path) =>
+          setCleanupSelection((current) =>
+            Object.fromEntries(
+              Object.entries(current).filter(([entryPath]) => entryPath !== path)
+            )
+          )
+        }
+        onClear={clearCleanupSelection}
+        onTrash={executeCleanup}
+      />
 
       <LiviaAssistant
         report={report}
@@ -983,6 +1152,9 @@ export default function App() {
         selectedFile={selectedFile}
         duplicateBusy={duplicateBusy}
         duplicateReport={duplicateReport}
+        cleanupCount={cleanupFiles.length}
+        cleanupBusy={cleanupBusy}
+        lastCleanup={lastCleanup}
       />
     </main>
   );

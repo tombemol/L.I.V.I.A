@@ -1,8 +1,13 @@
 mod scanner;
 
-use scanner::{DuplicateProgress, DuplicateReport, ScanIndex, ScanProgress, ScanReport, SearchResponse};
+use scanner::{
+    DuplicateProgress, DuplicateReport, FileEntry, ScanIndex, ScanProgress, ScanReport, SearchResponse,
+};
+use serde::Serialize;
 use std::{
-    path::PathBuf,
+    collections::HashSet,
+    fs,
+    path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, RwLock,
@@ -15,6 +20,21 @@ struct ScanState {
     cancel: Arc<AtomicBool>,
     running: Arc<AtomicBool>,
     index: Arc<RwLock<Option<ScanIndex>>>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CleanupFailure {
+    path: String,
+    reason: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CleanupResult {
+    moved_files: Vec<FileEntry>,
+    moved_bytes: u64,
+    failed: Vec<CleanupFailure>,
 }
 
 #[tauri::command]
@@ -134,6 +154,148 @@ async fn find_duplicates(
 }
 
 #[tauri::command]
+async fn move_to_trash(
+    state: State<'_, ScanState>,
+    paths: Vec<String>,
+) -> Result<CleanupResult, String> {
+    if paths.is_empty() {
+        return Err("Selecione ao menos um arquivo antes de limpar.".to_string());
+    }
+    if paths.len() > 200 {
+        return Err("A limpeza assistida aceita no máximo 200 arquivos por operação.".to_string());
+    }
+
+    let index_state = Arc::clone(&state.index);
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let requested: HashSet<String> = paths.into_iter().collect();
+
+        let candidates = {
+            let guard = index_state
+                .read()
+                .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+            let index = guard
+                .as_ref()
+                .ok_or_else(|| "Faça uma análise antes de limpar arquivos.".to_string())?;
+
+            index
+                .files
+                .iter()
+                .filter(|file| requested.contains(&file.path))
+                .cloned()
+                .collect::<Vec<_>>()
+        };
+
+        if candidates.is_empty() {
+            return Err("Nenhum dos arquivos selecionados pertence ao índice atual.".to_string());
+        }
+
+        let current_exe = std::env::current_exe().ok();
+        let windows_dir = std::env::var_os("WINDIR").map(PathBuf::from);
+        let mut moved_files = Vec::<FileEntry>::new();
+        let mut failed = Vec::<CleanupFailure>::new();
+
+        for file in candidates {
+            let target = PathBuf::from(&file.path);
+
+            if is_protected_path(&target, current_exe.as_deref(), windows_dir.as_deref()) {
+                failed.push(CleanupFailure {
+                    path: file.path.clone(),
+                    reason: "Arquivo protegido pela política de segurança da L.I.V.I.A.".to_string(),
+                });
+                continue;
+            }
+
+            let metadata = match fs::symlink_metadata(&target) {
+                Ok(metadata) => metadata,
+                Err(error) => {
+                    failed.push(CleanupFailure {
+                        path: file.path.clone(),
+                        reason: format!("O arquivo não está mais acessível: {error}"),
+                    });
+                    continue;
+                }
+            };
+
+            if metadata.file_type().is_symlink() || !metadata.is_file() {
+                failed.push(CleanupFailure {
+                    path: file.path.clone(),
+                    reason: "A limpeza assistida aceita somente arquivos regulares.".to_string(),
+                });
+                continue;
+            }
+
+            if metadata.len() != file.size {
+                failed.push(CleanupFailure {
+                    path: file.path.clone(),
+                    reason: "O arquivo mudou desde a indexação e foi preservado.".to_string(),
+                });
+                continue;
+            }
+
+            match trash::delete(&target) {
+                Ok(()) => moved_files.push(file),
+                Err(error) => failed.push(CleanupFailure {
+                    path: target.to_string_lossy().to_string(),
+                    reason: format!("Não foi possível mover para a Lixeira: {error}"),
+                }),
+            }
+        }
+
+        if !moved_files.is_empty() {
+            let moved_paths: HashSet<&str> = moved_files.iter().map(|file| file.path.as_str()).collect();
+            let mut guard = index_state
+                .write()
+                .map_err(|_| "O índice local ficou indisponível.".to_string())?;
+            let index = guard
+                .as_mut()
+                .ok_or_else(|| "O índice atual foi encerrado durante a limpeza.".to_string())?;
+            index
+                .files
+                .retain(|file| !moved_paths.contains(file.path.as_str()));
+        }
+
+        let moved_bytes = moved_files
+            .iter()
+            .map(|file| file.size)
+            .fold(0_u64, u64::saturating_add);
+
+        Ok(CleanupResult {
+            moved_files,
+            moved_bytes,
+            failed,
+        })
+    })
+    .await
+    .map_err(|error| format!("Falha ao executar a limpeza assistida: {error}"))?
+}
+
+fn is_protected_path(target: &Path, current_exe: Option<&Path>, windows_dir: Option<&Path>) -> bool {
+    let normalized = target.to_string_lossy().to_ascii_lowercase();
+
+    if let Some(exe) = current_exe {
+        if normalized == exe.to_string_lossy().to_ascii_lowercase() {
+            return true;
+        }
+    }
+
+    if let Some(windows) = windows_dir {
+        let windows = windows
+            .to_string_lossy()
+            .trim_end_matches(|value| value == '\\' || value == '/')
+            .to_ascii_lowercase();
+        if normalized == windows
+            || normalized.starts_with(&format!("{windows}\\"))
+            || normalized.starts_with(&format!("{windows}/"))
+        {
+            return true;
+        }
+    }
+
+    false
+}
+
+#[tauri::command]
 fn cancel_scan(state: State<'_, ScanState>) {
     state.cancel.store(true, Ordering::SeqCst);
 }
@@ -189,10 +351,45 @@ pub fn run() {
             browse_index,
             search_index,
             find_duplicates,
+            move_to_trash,
             cancel_scan,
             system_drive,
             open_in_explorer
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a L.I.V.I.A.");
+}
+
+
+#[cfg(test)]
+mod cleanup_tests {
+    use super::is_protected_path;
+    use std::path::Path;
+
+    #[test]
+    fn blocks_windows_directory_case_insensitively() {
+        assert!(is_protected_path(
+            Path::new(r"C:\WINDOWS\System32\kernel32.dll"),
+            None,
+            Some(Path::new(r"C:\Windows")),
+        ));
+    }
+
+    #[test]
+    fn blocks_current_executable() {
+        assert!(is_protected_path(
+            Path::new(r"C:\Apps\Livia\L.I.V.I.A.exe"),
+            Some(Path::new(r"C:\Apps\Livia\L.I.V.I.A.exe")),
+            None,
+        ));
+    }
+
+    #[test]
+    fn allows_unrelated_user_file() {
+        assert!(!is_protected_path(
+            Path::new(r"C:\Users\Tom\Downloads\old.iso"),
+            Some(Path::new(r"C:\Apps\Livia\L.I.V.I.A.exe")),
+            Some(Path::new(r"C:\Windows")),
+        ));
+    }
 }

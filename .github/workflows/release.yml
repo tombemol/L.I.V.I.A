@@ -42,7 +42,11 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            - corrige a sprite sheet da Lívia que podia aparecer vazia no app e no README;
+            - limpeza assistida com seleção múltipla e revisão antes da ação;
+            - envio para a Lixeira do Windows, sem exclusão permanente;
+            - validação do arquivo novamente antes da limpeza e proteção da pasta do Windows;
+            - histórico local resumido das operações de limpeza;
+            - Lívia reage à seleção e conclusão da limpeza;
             - índice de sessão e busca global sem revarrer o disco;
             - navegação instantânea pelo índice e aceleração NTFS/MFT quando disponível;
             - confirmação de duplicatas em duas etapas com BLAKE3;

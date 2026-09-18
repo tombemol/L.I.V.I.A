@@ -105,3 +105,23 @@ export type SearchResponse = {
   durationMs: number;
   files: FileEntry[];
 };
+
+
+export type CleanupFailure = {
+  path: string;
+  reason: string;
+};
+
+export type CleanupResult = {
+  movedFiles: FileEntry[];
+  movedBytes: number;
+  failed: CleanupFailure[];
+};
+
+export type CleanupHistoryEntry = {
+  id: string;
+  timestamp: number;
+  movedFiles: number;
+  movedBytes: number;
+  failedFiles: number;
+};
