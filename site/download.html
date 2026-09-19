@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0c10" />
+  <meta name="description" content="Downloads oficiais da L.I.V.I.A. para Windows, Linux e Android experimental, com política pública de assinatura de código." />
+  <title>Downloads oficiais — L.I.V.I.A.</title>
+  <link rel="icon" href="./assets/livia-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="canonical" href="https://tombemol.github.io/L.I.V.I.A/download.html" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="nav-wrap">
+    <nav class="nav" aria-label="Navegação principal">
+      <a class="brand" href="./#top" aria-label="L.I.V.I.A. início">
+        <img src="./assets/livia-mark.svg" alt="" />
+        <span>L.I.V.I.A.</span>
+      </a>
+      <div class="nav-links">
+        <a href="./#produto">Produto</a>
+        <a href="./privacy.html">Privacidade</a>
+        <a href="./download.html" aria-current="page">Download</a>
+        <a class="nav-github" href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">GitHub ↗</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="policy-page">
+    <section class="policy-hero">
+      <span class="eyebrow">downloads oficiais</span>
+      <h1>Baixe a L.I.V.I.A. pela fonte oficial.</h1>
+      <p>As builds públicas são produzidas pelo repositório oficial e distribuídas pelo GitHub Releases. Checksums SHA-256 acompanham os artefatos publicados pela pipeline.</p>
+    </section>
+
+    <section class="policy-grid" aria-label="Plataformas">
+      <article class="policy-card">
+        <span class="policy-kicker">WINDOWS</span>
+        <h2>Instalador x64</h2>
+        <p>Build desktop principal. Releases assinadas serão identificadas como tal e verificáveis pela assinatura Authenticode.</p>
+        <a class="button primary policy-button" href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">Ver downloads Windows ↗</a>
+      </article>
+
+      <article class="policy-card">
+        <span class="policy-kicker">LINUX</span>
+        <h2>AppImage e .deb</h2>
+        <p>Pacotes desktop publicados na mesma revisão do código e acompanhados por checksum SHA-256.</p>
+        <a class="button secondary policy-button" href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">Ver downloads Linux ↗</a>
+      </article>
+
+      <article class="policy-card">
+        <span class="policy-kicker">ANDROID</span>
+        <h2>Protótipo experimental</h2>
+        <p>Enquanto a distribuição pública assinada não é finalizada, o APK Android deve ser tratado como protótipo de testes.</p>
+        <a class="button secondary policy-button" href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">Ver releases Android ↗</a>
+      </article>
+    </section>
+
+    <section class="policy-section" id="code-signing-policy">
+      <span class="eyebrow">proveniência verificável</span>
+      <h2>Code signing policy</h2>
+      <div class="policy-copy">
+        <p><strong>Free code signing provided by SignPath.io, certificate by SignPath Foundation.</strong></p>
+        <p>As releases oficiais Windows marcadas como assinadas são produzidas a partir do código-fonte do repositório oficial e seguem a política pública de assinatura do projeto. Releases antigas ou de desenvolvimento podem permanecer sem assinatura enquanto a integração estiver em implantação.</p>
+        <p>A assinatura serve para verificar a origem do binário. Ela não transforma builds de terceiros em releases oficiais e não autoriza alterações fora do fluxo de publicação do projeto.</p>
+      </div>
+
+      <div class="policy-roles">
+        <div><span>Committer e reviewer</span><a href="https://github.com/tombemol" target="_blank" rel="noreferrer">Antonio Silva · @tombemol ↗</a></div>
+        <div><span>Approver de assinatura</span><a href="https://github.com/tombemol" target="_blank" rel="noreferrer">Antonio Silva · @tombemol ↗</a></div>
+      </div>
+
+      <div class="policy-links">
+        <a href="./code-signing.html">Política completa de assinatura →</a>
+        <a href="./privacy.html">Política de privacidade →</a>
+        <a href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">Código-fonte →</a>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <span class="eyebrow">verificação independente</span>
+      <h2>Checksums</h2>
+      <div class="policy-copy">
+        <p>Os artefatos publicados pela pipeline recebem arquivos <code>.sha256</code>. Compare o hash do arquivo baixado com o checksum publicado na mesma release antes de instalar, especialmente em builds ainda não assinadas.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="brand footer-brand"><img src="./assets/livia-mark.svg" alt="" /><span>L.I.V.I.A.</span></div>
+      <p>Leitura Inteligente e Visualização de Informações de Armazenamento.</p>
+      <div class="footer-links">
+        <a href="./download.html">Download</a>
+        <a href="./privacy.html">Privacidade</a>
+        <a href="./code-signing.html">Code signing policy</a>
+        <a href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">Código</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

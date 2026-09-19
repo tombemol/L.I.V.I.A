@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0c10" />
+  <meta name="description" content="Code signing policy oficial do projeto open source L.I.V.I.A." />
+  <title>Code signing policy — L.I.V.I.A.</title>
+  <link rel="icon" href="./assets/livia-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="canonical" href="https://tombemol.github.io/L.I.V.I.A/code-signing.html" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="nav-wrap">
+    <nav class="nav" aria-label="Navegação principal">
+      <a class="brand" href="./#top" aria-label="L.I.V.I.A. início">
+        <img src="./assets/livia-mark.svg" alt="" />
+        <span>L.I.V.I.A.</span>
+      </a>
+      <div class="nav-links">
+        <a href="./download.html">Download</a>
+        <a href="./privacy.html">Privacidade</a>
+        <a href="./code-signing.html" aria-current="page">Code signing policy</a>
+        <a class="nav-github" href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">GitHub ↗</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="policy-page">
+    <section class="policy-hero">
+      <span class="eyebrow">origem do binário</span>
+      <h1>Code signing policy</h1>
+      <p>Esta página define como releases oficiais Windows da L.I.V.I.A. são produzidas, aprovadas e identificadas quando assinadas.</p>
+      <span class="legal-meta">Projeto: L.I.V.I.A. · Licença MIT · Repositório público</span>
+    </section>
+
+    <section class="policy-section">
+      <h2>Code signing provider</h2>
+      <div class="policy-copy">
+        <p><strong>Free code signing provided by SignPath.io, certificate by SignPath Foundation.</strong></p>
+        <p>O certificado é usado exclusivamente para artefatos oficiais da L.I.V.I.A. produzidos a partir do repositório <a href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">tombemol/L.I.V.I.A</a>.</p>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>Equipe e responsabilidades</h2>
+      <div class="policy-roles">
+        <div><span>Committer</span><a href="https://github.com/tombemol" target="_blank" rel="noreferrer">Antonio Silva · @tombemol ↗</a></div>
+        <div><span>Reviewer</span><a href="https://github.com/tombemol" target="_blank" rel="noreferrer">Antonio Silva · @tombemol ↗</a></div>
+        <div><span>Signing approver</span><a href="https://github.com/tombemol" target="_blank" rel="noreferrer">Antonio Silva · @tombemol ↗</a></div>
+      </div>
+      <div class="policy-copy">
+        <p>Alterações de terceiros devem passar por revisão antes de entrar na branch principal. Cada solicitação de assinatura deve ser aprovada manualmente pelo signing approver.</p>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>Origem e build dos artefatos</h2>
+      <div class="policy-copy">
+        <p>Releases oficiais são construídas por workflows versionados no próprio repositório. O código-fonte, scripts de build e configuração de CI usados para produzir os binários permanecem públicos.</p>
+        <p>Somente artefatos produzidos a partir do código oficial do projeto podem ser submetidos para assinatura. Binários modificados ou recompilados por terceiros não são releases oficiais da L.I.V.I.A., mesmo que usem o mesmo código-fonte.</p>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>Distribuição e verificação</h2>
+      <div class="policy-copy">
+        <p>O canal oficial de distribuição é a página de GitHub Releases vinculada abaixo. A página pública de downloads aponta para esse canal e os artefatos publicados pela pipeline recebem checksum SHA-256.</p>
+        <p>Releases anteriores ao início da assinatura, builds experimentais ou artefatos de desenvolvimento podem permanecer sem assinatura. A ausência de assinatura deve ser tratada como característica daquela build, não como evidência de que um arquivo externo seja oficial.</p>
+      </div>
+      <div class="policy-links">
+        <a href="./download.html">Página oficial de downloads →</a>
+        <a href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">GitHub Releases ↗</a>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>Privacidade</h2>
+      <div class="policy-copy">
+        <p>A L.I.V.I.A. processa o índice de armazenamento localmente. A aplicação não transfere o conteúdo do índice, nomes de arquivos ou arquivos analisados para a SignPath durante a execução. Conexões externas usadas pelo updater e pelo site estão descritas na política de privacidade.</p>
+      </div>
+      <div class="policy-links">
+        <a href="./privacy.html">Política de privacidade →</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="brand footer-brand"><img src="./assets/livia-mark.svg" alt="" /><span>L.I.V.I.A.</span></div>
+      <p>Build pública, origem verificável.</p>
+      <div class="footer-links">
+        <a href="./download.html">Download</a>
+        <a href="./privacy.html">Privacidade</a>
+        <a href="./code-signing.html">Code signing policy</a>
+        <a href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">Código</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

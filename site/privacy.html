@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0c10" />
+  <meta name="description" content="Política de privacidade da L.I.V.I.A., analisador de armazenamento local-first." />
+  <title>Política de Privacidade — L.I.V.I.A.</title>
+  <link rel="icon" href="./assets/livia-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="canonical" href="https://tombemol.github.io/L.I.V.I.A/privacy.html" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="nav-wrap">
+    <nav class="nav" aria-label="Navegação principal">
+      <a class="brand" href="./#top" aria-label="L.I.V.I.A. início">
+        <img src="./assets/livia-mark.svg" alt="" />
+        <span>L.I.V.I.A.</span>
+      </a>
+      <div class="nav-links">
+        <a href="./download.html">Download</a>
+        <a href="./privacy.html" aria-current="page">Privacidade</a>
+        <a href="./code-signing.html">Code signing policy</a>
+        <a class="nav-github" href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">GitHub ↗</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="policy-page">
+    <section class="policy-hero">
+      <span class="eyebrow">local-first de verdade</span>
+      <h1>Política de Privacidade</h1>
+      <p>A L.I.V.I.A. foi projetada para analisar armazenamento no próprio dispositivo. Não exigimos conta, não vendemos dados e não usamos telemetria ou anúncios dentro do aplicativo.</p>
+      <span class="legal-meta">Última atualização: 19 de setembro de 2026</span>
+    </section>
+
+    <section class="policy-section">
+      <h2>1. Dados analisados localmente</h2>
+      <div class="policy-copy">
+        <p>Durante uma análise, a L.I.V.I.A. pode ler nomes e caminhos de arquivos, tamanhos, datas, tipos, hashes necessários para confirmação de duplicatas e outras informações de sistema relacionadas ao armazenamento escolhido pelo usuário.</p>
+        <p>Esses dados são processados localmente para construir o índice, snapshots e visualizações. O conteúdo do índice de arquivos não é enviado para servidores do projeto.</p>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>2. Dados persistidos no dispositivo</h2>
+      <div class="policy-copy">
+        <p>Índices e snapshots podem ser salvos localmente para permitir histórico, atualização incremental e recuperação de estado. Esses arquivos permanecem no dispositivo do usuário e podem ser removidos ao limpar os dados da aplicação ou desinstalá-la.</p>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>3. Conexões de rede</h2>
+      <div class="policy-copy">
+        <p>A versão desktop pode acessar a API e os arquivos do GitHub Releases para verificar a existência de atualizações, exibir notas de versão e, quando solicitado, baixar um instalador. A L.I.V.I.A. não anexa o índice de arquivos, nomes de arquivos ou conteúdo analisado a essas requisições.</p>
+        <p>O site do projeto é hospedado no GitHub Pages e consulta o GitHub Releases para localizar downloads recentes. GitHub pode receber metadados técnicos normais de uma requisição web, como endereço IP, user agent e horário, conforme a política de privacidade do próprio GitHub.</p>
+        <p>A assinatura de código pela SignPath acontece durante a construção e publicação de releases. A análise de armazenamento em execução não envia conteúdo do usuário para a SignPath.</p>
+      </div>
+      <div class="policy-links">
+        <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noreferrer">GitHub General Privacy Statement ↗</a>
+        <a href="https://signpath.org/" target="_blank" rel="noreferrer">SignPath Foundation ↗</a>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>4. Android e permissões de armazenamento</h2>
+      <div class="policy-copy">
+        <p>No Android, o usuário pode autorizar uma pasta pelo Storage Access Framework ou conceder acesso amplo ao armazenamento compartilhado quando esse modo estiver disponível. Essas permissões existem para permitir a análise local do armazenamento autorizado.</p>
+        <p>A L.I.V.I.A. não usa essas permissões para enviar os arquivos analisados ao projeto. Áreas privadas protegidas de outros aplicativos continuam sujeitas às restrições do Android.</p>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>5. Telemetria, publicidade e venda de dados</h2>
+      <div class="policy-copy">
+        <p>A aplicação não inclui sistema próprio de analytics, perfilamento comportamental, publicidade ou venda de informações pessoais. Não existe conta obrigatória da L.I.V.I.A.</p>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>6. Links e serviços externos</h2>
+      <div class="policy-copy">
+        <p>Ao abrir GitHub, páginas de download, links de documentação ou meios externos de apoio ao projeto, o usuário passa a interagir diretamente com o serviço escolhido. O tratamento de dados nesses serviços é regido pelas respectivas políticas.</p>
+      </div>
+    </section>
+
+    <section class="policy-section">
+      <h2>7. Contato e transparência</h2>
+      <div class="policy-copy">
+        <p>Dúvidas ou relatos relacionados à privacidade podem ser enviados pelo repositório público da L.I.V.I.A. Mudanças materiais nesta política serão publicadas junto ao código e ao site do projeto.</p>
+      </div>
+      <div class="policy-links">
+        <a href="https://github.com/tombemol/L.I.V.I.A/issues" target="_blank" rel="noreferrer">Abrir uma issue no GitHub ↗</a>
+        <a href="./code-signing.html">Code signing policy →</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="brand footer-brand"><img src="./assets/livia-mark.svg" alt="" /><span>L.I.V.I.A.</span></div>
+      <p>Privacidade por padrão, análise local por design.</p>
+      <div class="footer-links">
+        <a href="./download.html">Download</a>
+        <a href="./privacy.html">Privacidade</a>
+        <a href="./code-signing.html">Code signing policy</a>
+        <a href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">Código</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tombemol.github.io/L.I.V.I.A/sitemap.xml
