@@ -12,6 +12,7 @@ type UpdateInfo = {
   releaseName: string | null;
   publishedAt: string | null;
   releaseUrl: string | null;
+  releaseNotes: string | null;
   installerName: string | null;
   installerSize: number | null;
 };
@@ -43,8 +44,11 @@ function formatPublishedAt(value: string | null) {
 }
 
 export function UpdateCenter() {
-  const [currentVersion, setCurrentVersion] = useState("0.6.0");
+  const [currentVersion, setCurrentVersion] = useState("0.6.1");
   const [info, setInfo] = useState<UpdateInfo | null>(null);
+  const [ignoredVersion, setIgnoredVersion] = useState<string | null>(() =>
+    localStorage.getItem("livia-ignored-update")
+  );
   const [downloaded, setDownloaded] = useState<DownloadedUpdate | null>(null);
   const [progress, setProgress] = useState<UpdateProgress | null>(null);
   const [checking, setChecking] = useState(false);
@@ -62,7 +66,8 @@ export function UpdateCenter() {
       const result = await invoke<UpdateInfo>("check_for_update");
       setInfo(result);
       setCurrentVersion(result.currentVersion);
-      if (showPanel || result.available) setOpen(true);
+      const ignored = result.available && result.latestVersion === ignoredVersion;
+      if (showPanel || (result.available && !ignored)) setOpen(true);
     } catch (reason) {
       if (showPanel) {
         setError(
@@ -104,6 +109,17 @@ export function UpdateCenter() {
       dispose?.();
     };
   }, []);
+
+  function ignoreCurrentVersion() {
+    if (!info?.available) return;
+    localStorage.setItem("livia-ignored-update", info.latestVersion);
+    setIgnoredVersion(info.latestVersion);
+    setOpen(false);
+  }
+
+  function remindLater() {
+    setOpen(false);
+  }
 
   async function download() {
     if (downloading) return;
@@ -147,6 +163,13 @@ export function UpdateCenter() {
     }
   }
 
+  const isIgnored = Boolean(
+    info?.available && ignoredVersion === info.latestVersion
+  );
+  const releaseNotes = info?.releaseNotes?.trim() ?? "";
+  const releaseNotesPreview =
+    releaseNotes.length > 1400 ? `${releaseNotes.slice(0, 1400)}…` : releaseNotes;
+
   const total = progress?.totalBytes ?? 0;
   const percent =
     total > 0
@@ -156,7 +179,7 @@ export function UpdateCenter() {
   return (
     <div className="update-center">
       <button
-        className={`version-pill update-trigger${info?.available ? " update-available" : ""}`}
+        className={`version-pill update-trigger${info?.available && !isIgnored ? " update-available" : ""}`}
         type="button"
         onClick={() => {
           setOpen((value) => !value);
@@ -212,6 +235,19 @@ export function UpdateCenter() {
                   ? ` · ${formatPublishedAt(info.publishedAt)}`
                   : ""}
               </p>
+
+              {releaseNotesPreview ? (
+                <div className="update-release-notes">
+                  <span>NOVIDADES DA RELEASE</span>
+                  <p>{releaseNotesPreview}</p>
+                </div>
+              ) : null}
+
+              {isIgnored ? (
+                <div className="update-ignored-note">
+                  Esta versão está ignorada para avisos automáticos. Você ainda pode instalá-la manualmente.
+                </div>
+              ) : null}
 
               {info.installerSize ? (
                 <div className="update-integrity">
@@ -284,6 +320,15 @@ export function UpdateCenter() {
                     {downloading ? "Baixando…" : "Baixar pela L.I.V.I.A."}
                   </button>
                 )}
+              </div>
+
+              <div className="update-dismiss-actions">
+                <button type="button" onClick={remindLater}>
+                  Agora não
+                </button>
+                <button type="button" onClick={ignoreCurrentVersion}>
+                  Ignorar v{info.latestVersion}
+                </button>
               </div>
             </>
           ) : null}
