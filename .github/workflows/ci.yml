@@ -58,8 +58,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: --bundles nsis
-          uploadWorkflowArtifacts: true
-          workflowArtifactNamePattern: "LIVIA-v[version]-[platform]-[arch]-[bundle]"
 
   linux:
     runs-on: ubuntu-22.04
@@ -104,5 +102,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: --bundles appimage,deb
-          uploadWorkflowArtifacts: true
-          workflowArtifactNamePattern: "LIVIA-v[version]-[platform]-[arch]-[bundle]"
