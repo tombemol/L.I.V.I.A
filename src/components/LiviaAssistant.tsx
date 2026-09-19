@@ -32,6 +32,7 @@ type Props = {
   lastCleanup?: { files: number; bytes: number } | null;
   lastRestore?: { files: number; bytes: number } | null;
   loadedFromMemory?: boolean;
+  recoveredFromBackup?: boolean;
   snapshotCount?: number;
   lastRefresh?: {
     incremental: boolean;
@@ -125,6 +126,7 @@ export function LiviaAssistant({
   lastCleanup,
   lastRestore,
   loadedFromMemory = false,
+  recoveredFromBackup = false,
   snapshotCount = 0,
   lastRefresh,
   historyDelta = null
@@ -263,6 +265,15 @@ export function LiviaAssistant({
       };
     }
 
+    if (report && recoveredFromBackup) {
+      return {
+        mood: "worried",
+        title: "Recuperei o último estado válido",
+        message: "O índice principal não passou na validação, então usei o backup local e restaurei uma cópia íntegra. Melhor perder uma gravação recente do que fingir que JSON quebrado é memória.",
+        key: `backup-recovery:${report.indexRoot}`
+      };
+    }
+
     if (report && loadedFromMemory) {
       return {
         mood: "happy",
@@ -310,6 +321,7 @@ export function LiviaAssistant({
     lastRestore,
     historyDelta,
     loadedFromMemory,
+    recoveredFromBackup,
     lastRefresh,
     progress,
     restoreBusy,

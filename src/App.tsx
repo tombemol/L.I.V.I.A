@@ -233,6 +233,7 @@ export default function App() {
   const [snapshots, setSnapshots] = useState<StorageSnapshot[]>([]);
   const [indexSavedAt, setIndexSavedAt] = useState<number | null>(null);
   const [loadedFromMemory, setLoadedFromMemory] = useState(false);
+  const [recoveredFromBackup, setRecoveredFromBackup] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<RefreshIndexResponse | null>(null);
   const [cleanupHistory, setCleanupHistory] = useState<CleanupHistoryEntry[]>(() => {
     try {
@@ -292,6 +293,7 @@ export default function App() {
         setIndexSavedAt(cached.savedAtSecs);
         setSnapshots(cached.snapshots);
         setLoadedFromMemory(true);
+        setRecoveredFromBackup(cached.recoveredFromBackup);
       })
       .catch(() => undefined);
 
@@ -473,6 +475,7 @@ export default function App() {
     setLastRestore(null);
     setLastRefresh(null);
     setLoadedFromMemory(false);
+    setRecoveredFromBackup(false);
     setProgress({
       root: path,
       filesScanned: 0,
@@ -524,6 +527,7 @@ export default function App() {
     setLastCleanup(null);
     setLastRestore(null);
     setLoadedFromMemory(false);
+    setRecoveredFromBackup(false);
     setProgress({
       root: report.indexRoot,
       filesScanned: 0,
@@ -1467,6 +1471,7 @@ export default function App() {
         lastCleanup={lastCleanup}
         lastRestore={lastRestore}
         loadedFromMemory={loadedFromMemory}
+        recoveredFromBackup={recoveredFromBackup}
         snapshotCount={snapshots.length}
         lastRefresh={lastRefresh}
         historyDelta={snapshotDelta}
