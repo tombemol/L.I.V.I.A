@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#11131a" />
+  <meta name="theme-color" content="#0b0c10" />
   <meta name="description" content="L.I.V.I.A. é um analisador de armazenamento gratuito e open source para descobrir o que está ocupando espaço no seu computador." />
   <meta property="og:title" content="L.I.V.I.A. — Seu armazenamento em perspectiva" />
   <meta property="og:description" content="Descubra para onde foi o espaço do seu PC. Grátis, open source e sem assinatura." />
@@ -13,16 +13,21 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
   <header class="nav-wrap">
     <nav class="nav" aria-label="Navegação principal">
       <a class="brand" href="#top" aria-label="L.I.V.I.A. início">
         <img src="./assets/livia-mark.svg" alt="" />
         <span>L.I.V.I.A.</span>
       </a>
+
       <div class="nav-links">
-        <a href="#recursos">Recursos</a>
-        <a href="#seguranca">Segurança</a>
+        <a href="#produto">Produto</a>
+        <a href="#seguranca">Privacidade</a>
         <a href="#download">Download</a>
+        <button class="nav-support" type="button" data-open-donation>Apoiar projeto</button>
         <a class="nav-github" href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">GitHub ↗</a>
       </div>
     </nav>
@@ -30,17 +35,18 @@
 
   <main id="top">
     <section class="hero section">
-      <div class="hero-copy">
-        <div class="eyebrow"><span class="dot"></span> gratuito · open source · local-first</div>
-        <h1>Descubra para onde foi <span>o espaço do seu PC.</span></h1>
-        <p class="lead">A L.I.V.I.A. analisa seu armazenamento, encontra arquivos e pastas gigantes e transforma a bagunça do disco em informação que dá para entender.</p>
+      <div class="hero-copy" data-reveal>
+        <div class="eyebrow"><span class="status-dot"></span> gratuito · open source · local-first</div>
+        <h1>Seu disco não está <em>misteriosamente</em> cheio.</h1>
+        <p class="lead">A L.I.V.I.A. mostra o que está ocupando espaço, encontra os grandões, confirma duplicatas e acompanha como seu armazenamento muda com o tempo.</p>
 
         <div class="hero-actions">
           <a id="primary-download" class="button primary" href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">
-            <span id="primary-download-icon">↓</span>
+            <span class="button-icon">↓</span>
             <span id="primary-download-label">Baixar para Windows</span>
           </a>
           <a class="button secondary" href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">Ver código ↗</a>
+          <button class="button ghost" type="button" data-open-donation>♡ Apoiar</button>
         </div>
 
         <div class="release-line">
@@ -48,11 +54,19 @@
           <span class="sep">•</span>
           <span>Windows agora · Linux em preparação</span>
         </div>
+
+        <p class="hero-note">“Primeiro eu mostro a bagunça. Depois você decide o que merece ir embora.”</p>
       </div>
 
-      <div class="hero-visual" aria-label="Prévia da interface da L.I.V.I.A.">
-        <div class="glow"></div>
-        <div class="app-window">
+      <div class="hero-product" data-reveal data-delay="100">
+        <div class="hero-product-aura"></div>
+
+        <div class="product-meta">
+          <span class="product-meta-label">LIVE INDEX</span>
+          <span class="product-meta-status"><i></i> pronto para explorar</span>
+        </div>
+
+        <div class="app-window" data-parallax>
           <div class="titlebar">
             <div class="window-brand">
               <img src="./assets/livia-mark.svg" alt="" />
@@ -60,6 +74,7 @@
             </div>
             <div class="window-controls"><i></i><i></i><i></i></div>
           </div>
+
           <div class="app-body">
             <aside class="sidebar" aria-hidden="true">
               <div class="side-item active">◫ <span>Visão geral</span></div>
@@ -68,6 +83,7 @@
               <div class="side-item">◎ <span>Duplicatas</span></div>
               <div class="side-item">◷ <span>Histórico</span></div>
             </aside>
+
             <div class="dashboard">
               <div class="dash-top">
                 <div>
@@ -76,6 +92,7 @@
                 </div>
                 <span class="scan-pill">índice atualizado</span>
               </div>
+
               <div class="cards">
                 <article class="usage-card">
                   <div class="donut">
@@ -88,6 +105,7 @@
                     <span><b class="c4"></b> Outros <strong>53 GB</strong></span>
                   </div>
                 </article>
+
                 <article class="folder-card">
                   <div class="card-head"><strong>Maiores pastas</strong><span>ver todas</span></div>
                   <div class="folder-row"><span>Vídeos</span><i style="--w:92%"></i><strong>89 GB</strong></div>
@@ -96,86 +114,121 @@
                   <div class="folder-row"><span>Downloads</span><i style="--w:24%"></i><strong>19 GB</strong></div>
                 </article>
               </div>
+
               <div class="livia-tip">
-                <img src="./assets/livia-sprites.webp" alt="Expressões da personagem Lívia" />
-                <p><strong>Encontrei os grandões.</strong><br />Sua pasta de vídeos está ocupando mais espaço que o bom senso recomendaria.</p>
+                <span class="site-livia-portrait livia-happy" aria-hidden="true"></span>
+                <p><span>LÍVIA</span><strong>Encontrei os grandões.</strong> Sua pasta de vídeos está ocupando mais espaço que o bom senso recomendaria.</p>
               </div>
             </div>
           </div>
+          <div class="scan-sheen" aria-hidden="true"></div>
+        </div>
+
+        <div class="floating-callout callout-left">
+          <span>SEM REESCANEAR</span>
+          <strong>957 mil arquivos indexados</strong>
+        </div>
+
+        <div class="floating-callout callout-right">
+          <span>MUDANÇA DETECTADA</span>
+          <strong>−1,38 GB desde o último snapshot</strong>
         </div>
       </div>
     </section>
 
-    <section class="trust-strip" aria-label="Diferenciais">
-      <div><strong>R$ 0</strong><span>Sem plano premium</span></div>
-      <div><strong>Local-first</strong><span>Seus dados ficam no PC</span></div>
-      <div><strong>MIT</strong><span>Código aberto</span></div>
-      <div><strong>Sem anúncios</strong><span>Porque já existem anúncios demais</span></div>
-    </section>
-
-    <section id="recursos" class="section features">
-      <div class="section-heading">
-        <span class="eyebrow">entenda antes de apagar</span>
-        <h2>Seu disco, explicado sem caça ao tesouro.</h2>
-        <p>A L.I.V.I.A. não tenta ser um “otimizador mágico”. Ela mostra os dados, confirma duplicatas e deixa a decisão com você.</p>
-      </div>
-
-      <div class="feature-grid">
-        <article class="feature">
-          <span class="feature-icon">◔</span>
-          <h3>Visualize o espaço</h3>
-          <p>Treemap, gráficos de pizza e rankings transformam gigabytes abstratos em algo que você consegue enxergar.</p>
-        </article>
-        <article class="feature">
-          <span class="feature-icon">⌕</span>
-          <h3>Encontre os culpados</h3>
-          <p>Busque o índice inteiro, filtre arquivos e descubra rapidamente quais pastas cresceram mais.</p>
-        </article>
-        <article class="feature">
-          <span class="feature-icon">≋</span>
-          <h3>Confirme duplicatas</h3>
-          <p>Triagem por tamanho e confirmação BLAKE3 antes de chamar dois arquivos de iguais. Radical: verificar antes de afirmar.</p>
-        </article>
-        <article class="feature">
-          <span class="feature-icon">↶</span>
-          <h3>Limpe com cautela</h3>
-          <p>Seleção assistida, revisão antes da ação, Lixeira do sistema e desfazer quando a restauração pode ser feita com segurança.</p>
-        </article>
-        <article class="feature">
-          <span class="feature-icon">◷</span>
-          <h3>Acompanhe mudanças</h3>
-          <p>Snapshots locais mostram como o armazenamento mudou e ajudam a perceber de onde o crescimento veio.</p>
-        </article>
-        <article class="feature mascot-feature">
-          <img src="./assets/livia-sprites.webp" alt="" />
-          <h3>Uma guia que presta atenção</h3>
-          <p>A Lívia reage ao contexto, explica tipos de arquivo e ajuda sem transformar sugestões em ações automáticas.</p>
-        </article>
+    <section class="signal-rail" aria-label="Diferenciais">
+      <div class="signal-track">
+        <span>R$ 0 · sem plano premium</span>
+        <span>MIT · código aberto</span>
+        <span>local-first · seus dados ficam no PC</span>
+        <span>duplicatas confirmadas por hash</span>
+        <span>histórico de armazenamento</span>
+        <span>limpeza assistida e reversível</span>
+        <span aria-hidden="true">R$ 0 · sem plano premium</span>
+        <span aria-hidden="true">MIT · código aberto</span>
+        <span aria-hidden="true">local-first · seus dados ficam no PC</span>
       </div>
     </section>
 
-    <section id="seguranca" class="section safety">
-      <div class="safety-card">
-        <div>
-          <span class="eyebrow">privacidade por padrão</span>
-          <h2>Seu armazenamento não precisa sair do seu computador.</h2>
-          <p>Análise, índice, snapshots e histórico ficam localmente. A proposta é simples: um analisador de disco não deveria precisar bisbilhotar sua vida na nuvem.</p>
+    <section id="produto" class="section product-story">
+      <div class="story-heading" data-reveal>
+        <span class="eyebrow">informação antes de ação</span>
+        <h2>Um analisador que explica <em>por que</em>, não só quanto.</h2>
+        <p>Em vez de jogar dez números iguais em dez cards iguais, a L.I.V.I.A. organiza o problema em uma sequência útil: enxergar, entender, confirmar e só então limpar.</p>
+      </div>
+
+      <div class="story-grid">
+        <article class="story-primary" data-reveal>
+          <div class="story-index">01</div>
+          <div>
+            <span class="story-kicker">Visualize</span>
+            <h3>O espaço deixa de ser uma barra genérica.</h3>
+            <p>Treemap, donut, maiores pastas, extensões e histórico mostram onde o espaço foi parar e o que mudou desde a última análise.</p>
+          </div>
+          <div class="mini-chart" aria-hidden="true">
+            <i style="--h:40%"></i><i style="--h:58%"></i><i style="--h:38%"></i><i style="--h:71%"></i><i style="--h:84%"></i><i style="--h:62%"></i><i style="--h:91%"></i>
+          </div>
+        </article>
+
+        <div class="story-stack">
+          <article class="story-row" data-reveal data-delay="60">
+            <span class="story-index">02</span>
+            <div><span class="story-kicker">Entenda</span><h3>Busca global sem passear pelo disco de novo.</h3><p>O índice persistente vira uma base navegável. Busca, filtros e drill-down trabalham em memória.</p></div>
+          </article>
+          <article class="story-row" data-reveal data-delay="100">
+            <span class="story-index">03</span>
+            <div><span class="story-kicker">Confirme</span><h3>Mesmo tamanho não significa arquivo igual.</h3><p>A confirmação de duplicatas usa BLAKE3 antes de chamar duas coisas de gêmeas.</p></div>
+          </article>
+          <article class="story-row" data-reveal data-delay="140">
+            <span class="story-index">04</span>
+            <div><span class="story-kicker">Limpe</span><h3>A Lixeira continua existindo por um motivo.</h3><p>Revisão, segunda confirmação e desfazer seguro quando o sistema consegue identificar exatamente o que foi movido.</p></div>
+          </article>
         </div>
-        <ul>
-          <li><span>✓</span> Sem conta obrigatória</li>
-          <li><span>✓</span> Sem assinatura</li>
-          <li><span>✓</span> Sem anúncios</li>
-          <li><span>✓</span> Código-fonte público</li>
-        </ul>
       </div>
     </section>
 
-    <section id="download" class="section download">
-      <div class="download-panel">
+    <section id="seguranca" class="section safety-section">
+      <div class="safety-copy" data-reveal>
+        <span class="eyebrow">privacidade por padrão</span>
+        <h2>Um analisador de disco não precisa bisbilhotar sua vida na nuvem.</h2>
+        <p>Índice, snapshots e histórico ficam locais. Sem conta obrigatória, sem assinatura e sem anúncio tentando monetizar até a pasta Downloads.</p>
+      </div>
+
+      <div class="safety-proof" data-reveal data-delay="100">
+        <div class="proof-head">
+          <span>LOCAL DATA FLOW</span>
+          <strong>Seu PC</strong>
+        </div>
+        <div class="proof-flow">
+          <span>Disco</span><i>→</i><span>Índice local</span><i>→</i><span>Visualização</span>
+        </div>
+        <div class="proof-stop"><span>×</span> nada é enviado pela análise</div>
+      </div>
+    </section>
+
+    <section class="section personality-section">
+      <div class="personality-copy" data-reveal>
+        <span class="eyebrow">uma interface com personalidade</span>
+        <h2>Seis expressões. Nenhuma precisa ser esticada até perder os pixels.</h2>
+        <p>O sprite oficial continua sendo a identidade da personagem, mas agora cada expressão é recortada na escala correta. Mais nítido, mais consistente e sem transformar a Lívia numa foto de Orkut de 2006.</p>
+      </div>
+
+      <div class="expression-grid" data-reveal data-delay="80" aria-label="Expressões da Lívia">
+        <div class="expression"><span class="site-livia-portrait livia-normal"></span><small>normal</small></div>
+        <div class="expression"><span class="site-livia-portrait livia-happy"></span><small>feliz</small></div>
+        <div class="expression"><span class="site-livia-portrait livia-explaining"></span><small>explicando</small></div>
+        <div class="expression"><span class="site-livia-portrait livia-judging"></span><small>julgando</small></div>
+        <div class="expression"><span class="site-livia-portrait livia-worried"></span><small>preocupada</small></div>
+        <div class="expression"><span class="site-livia-portrait livia-scanning"></span><small>escaneando</small></div>
+      </div>
+    </section>
+
+    <section id="download" class="section download-section">
+      <div class="download-panel" data-reveal>
         <div class="download-copy">
-          <span class="eyebrow">baixe e veja por conta própria</span>
-          <h2>Grátis. Sem pegadinha.</h2>
-          <p>Escolha sua plataforma. O botão usa os arquivos publicados nas GitHub Releases, então novas versões aparecem aqui sem alguém ter que editar o site na unha.</p>
+          <span class="eyebrow">baixe e use</span>
+          <h2>Grátis. Sem plano “Pro” escondido no segundo clique.</h2>
+          <p>Os botões consultam as GitHub Releases. Quando uma versão nova sair, o site acompanha sem alguém precisar trocar link na unha.</p>
           <span id="download-version" class="version-chip">Versão mais recente</span>
         </div>
 
@@ -185,6 +238,7 @@
             <span><strong>Windows</strong><small>x64 · instalador</small></span>
             <b>Baixar ↓</b>
           </a>
+
           <a id="linux-download" class="platform-card" href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">
             <span class="platform-icon">◉</span>
             <span><strong>Linux</strong><small>AppImage / .deb</small></span>
@@ -196,14 +250,18 @@
       </div>
     </section>
 
-    <section class="section mascot-section">
-      <div class="mascot-copy">
-        <span class="eyebrow">ela também tem opiniões</span>
-        <h2>Conheça a Lívia.</h2>
-        <p>Normal, feliz, explicando, julgando, preocupada ou escaneando. A personagem muda com o que está acontecendo no aplicativo sem ocupar a tela inteira como se fosse dona do computador.</p>
-      </div>
-      <div class="sprite-stage">
-        <img src="./assets/livia-sprites.webp" alt="Lívia em suas seis expressões oficiais" />
+    <section class="section support-section">
+      <div class="support-panel" data-reveal>
+        <div>
+          <span class="eyebrow">apoio voluntário</span>
+          <h2>Gostou da L.I.V.I.A.? Ajude o projeto a continuar gratuito.</h2>
+          <p>Doação não desbloqueia recurso, não remove limite e não compra tratamento VIP. É só apoio mesmo. Estranho, eu sei.</p>
+        </div>
+        <button class="support-cta" type="button" data-open-donation>
+          <span>♡</span>
+          <span><strong>Apoiar com Pix</strong><small>QR Code + copia e cola</small></span>
+          <b>→</b>
+        </button>
       </div>
     </section>
   </main>
@@ -215,10 +273,46 @@
       <div class="footer-links">
         <a href="https://github.com/tombemol/L.I.V.I.A" target="_blank" rel="noreferrer">Código</a>
         <a href="https://github.com/tombemol/L.I.V.I.A/releases" target="_blank" rel="noreferrer">Releases</a>
-        <a href="https://github.com/tombemol/L.I.V.I.A/issues" target="_blank" rel="noreferrer">Issues</a>
+        <button type="button" data-open-donation>Apoiar</button>
       </div>
     </div>
   </footer>
+
+  <dialog id="donation-dialog" class="donation-dialog" aria-labelledby="donation-title">
+    <div class="donation-shell">
+      <button class="dialog-close" type="button" data-close-donation aria-label="Fechar">×</button>
+
+      <div class="donation-copy">
+        <span class="eyebrow">apoie o desenvolvimento</span>
+        <h2 id="donation-title">Um cafezinho para a Lívia continuar julgando pastas Downloads.</h2>
+        <p>O Pix é sem valor fixo. Escolha quanto quiser, ou só continue usando e compartilhando o projeto. As duas coisas ajudam.</p>
+
+        <div class="receiver">
+          <span>Recebedor</span><strong>Antonio Silva</strong>
+          <span>Cidade</span><strong>Santo Amaro</strong>
+        </div>
+      </div>
+
+      <div class="pix-card">
+        <div class="qr-frame"><div id="pix-qr" class="pix-qr" role="img" aria-label="QR Code Pix para apoiar o projeto L.I.V.I.A."></div></div>
+        <span class="pix-label">PIX · sem valor fixo</span>
+
+        <div class="pix-field">
+          <span>Chave Pix</span>
+          <code id="pix-key">c6086883-d194-4e32-b803-dcb97a5daef5</code>
+          <button type="button" data-copy-pix-key>Copiar chave</button>
+        </div>
+
+        <div class="pix-field">
+          <span>Pix copia e cola</span>
+          <code id="pix-payload">00020126580014BR.GOV.BCB.PIX0136c6086883-d194-4e32-b803-dcb97a5daef55204000053039865802BR5913ANTONIO SILVA6011SANTO AMARO62070503***6304F8E2</code>
+          <button type="button" data-copy-pix-payload>Copiar código</button>
+        </div>
+
+        <span id="copy-feedback" class="copy-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+  </dialog>
 
   <script src="./app.js"></script>
 </body>

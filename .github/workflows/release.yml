@@ -46,15 +46,16 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            ### Relatórios exportáveis
+            ### Legibilidade + apresentação
 
-            - novo botão **Exportar** no dashboard;
-            - JSON completo com relatório, snapshots locais e duplicatas confirmadas;
-            - CSV preparado para Excel e similares, com BOM UTF-8 e separador por ponto e vírgula;
-            - nome de arquivo sugerido com raiz analisada e horário;
-            - exportação permanece totalmente local, sem envio de dados;
-            - backend aceita apenas destinos JSON/CSV e limita cada exportação a 100 MB;
-            - central de atualização continua mostrando notas da release, progresso e validação SHA-256.
+            - fontes pequenas do aplicativo ampliadas em toda a interface;
+            - títulos, métricas, tabelas, histórico, atualizador e falas da Lívia mais legíveis;
+            - landing page pública redesenhada com microanimações e hierarquia visual mais forte;
+            - sprites da Lívia exibidos por expressão, evitando ampliar a tira inteira;
+            - área de apoio voluntário via Pix na landing page;
+            - QR Code Pix e copia-e-cola gerados localmente, sem serviço externo;
+            - downloads continuam integrados às GitHub Releases;
+            - exportação JSON/CSV e atualização integrada da v0.7.0 continuam disponíveis.
 
             Observação: esta pré-release ainda não possui assinatura Authenticode. O Windows SmartScreen pode exibir "Fornecedor desconhecido" até a adoção de um certificado de code signing confiável.
           releaseDraft: false
