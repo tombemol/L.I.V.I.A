@@ -8,6 +8,12 @@ on:
       - "src-tauri/Cargo.toml"
       - "src-tauri/tauri.conf.json"
   workflow_dispatch:
+    inputs:
+      republish:
+        description: "Republicar uma versão que já existe"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -17,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       prerelease: ${{ steps.version.outputs.prerelease }}
+      publish: ${{ steps.version.outputs.publish }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,6 +31,9 @@ jobs:
       - name: Detect release channel
         id: version
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_REPUBLISH: ${{ github.event_name == 'workflow_dispatch' && inputs.republish || false }}
         run: |
           set -euo pipefail
           version="$(node -p "require('./package.json').version")"
@@ -36,9 +46,16 @@ jobs:
             echo "Versão estável $version: a publicação automática de prerelease será ignorada."
           fi
 
+          if gh release view "v$version" >/dev/null 2>&1 && [[ "$FORCE_REPUBLISH" != "true" ]]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Release v$version já existe; publicação automática ignorada."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
   windows:
     needs: channel
-    if: needs.channel.outputs.prerelease == 'true'
+    if: needs.channel.outputs.prerelease == 'true' && needs.channel.outputs.publish == 'true'
     runs-on: windows-latest
 
     steps:
