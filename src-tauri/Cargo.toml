@@ -33,3 +33,4 @@ usn-journal-rs = "0.4.1"
 
 [target.'cfg(target_os = "android")'.dependencies]
 tauri-plugin-android-fs = "=29.0.0"
+tauri-plugin-livia-android-storage = { path = "plugins/android-storage" }
