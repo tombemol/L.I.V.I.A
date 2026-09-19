@@ -180,7 +180,7 @@ button:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .logo-glyph {
@@ -223,7 +223,7 @@ button:focus-visible {
 
 .version-pill {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -242,7 +242,7 @@ button:focus-visible {
 .section-kicker,
 .metric-label {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.14em;
 }
@@ -307,7 +307,7 @@ button:focus-visible {
 
 .target-copy span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .primary-action,
@@ -321,7 +321,7 @@ button:focus-visible {
   justify-content: center;
   gap: 7px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 680;
   transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
 }
@@ -392,11 +392,11 @@ button:focus-visible {
 
 .privacy-line strong {
   color: var(--muted-strong);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .privacy-line span {
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .error-banner,
@@ -406,7 +406,7 @@ button:focus-visible {
   border: 1px solid var(--danger-border);
   border-radius: 6px;
   padding: 11px 13px;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .error-banner {
@@ -481,7 +481,7 @@ button:focus-visible {
 
 .metric-detail {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .current-path {
@@ -495,7 +495,7 @@ button:focus-visible {
 
 .current-path > span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -507,7 +507,7 @@ button:focus-visible {
   white-space: nowrap;
   color: var(--muted-strong);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .scan-actions {
@@ -523,7 +523,7 @@ button:focus-visible {
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .topbar-actions {
@@ -560,7 +560,7 @@ button:focus-visible {
 .review-summary > span:last-child {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .review-summary {
@@ -645,7 +645,7 @@ button:focus-visible {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 680;
   transition: color 120ms ease, background 120ms ease, box-shadow 120ms ease;
 }
@@ -701,7 +701,7 @@ button:focus-visible {
 
 .pie-center span {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 760;
   letter-spacing: 0.13em;
 }
@@ -796,13 +796,13 @@ button:focus-visible {
 
 .pie-legend-copy strong {
   color: var(--text);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .pie-legend-copy small,
 .pie-legend-value small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .pie-legend-value {
@@ -811,7 +811,7 @@ button:focus-visible {
 
 .pie-legend-value strong {
   color: var(--muted-strong);
-  font-size: 10px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -840,7 +840,7 @@ button:focus-visible {
 }
 
 .pie-tooltip strong {
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .pie-tooltip span:not(.pie-tooltip-dot) {
@@ -850,7 +850,7 @@ button:focus-visible {
 
 .pie-tooltip small {
   color: var(--tooltip-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .treemap-wrap {
@@ -885,18 +885,18 @@ button:focus-visible {
 
 .extension-copy > span:last-child {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .extension-name {
   color: var(--text);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 670;
 }
 
 .extension-value {
   color: var(--muted-strong);
-  font-size: 10px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -956,7 +956,7 @@ button:focus-visible {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .recommendation-main span,
@@ -967,12 +967,12 @@ button:focus-visible {
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .recommendation-reason > span {
   color: var(--muted-strong);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .recommendation-meta {
@@ -980,7 +980,7 @@ button:focus-visible {
 }
 
 .recommendation-meta strong {
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .recommendation-action {
@@ -995,7 +995,7 @@ button:focus-visible {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .recommendation-action:hover,
@@ -1022,12 +1022,12 @@ button:focus-visible {
 
 .calm-empty strong {
   color: var(--text);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .calm-empty span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .file-table {
@@ -1043,7 +1043,7 @@ button:focus-visible {
   min-height: 50px;
   border-bottom: 1px solid var(--line-soft);
   color: var(--muted-strong);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .file-row > span:nth-child(3) {
@@ -1055,13 +1055,13 @@ button:focus-visible {
 .file-row > strong:last-child {
   color: var(--text);
   text-align: right;
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .file-head {
   min-height: 32px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 760;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1076,7 +1076,7 @@ button:focus-visible {
   display: grid;
   place-items: center;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .app-footer {
@@ -1086,7 +1086,7 @@ button:focus-visible {
   gap: 7px;
   padding: 16px 2px 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .floating-error {
@@ -1165,7 +1165,7 @@ button:focus-visible {
   color: var(--muted-strong);
   background: transparent;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 650;
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
@@ -1202,7 +1202,7 @@ button:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .treemap-tooltip span {
@@ -1213,7 +1213,7 @@ button:focus-visible {
 
 .treemap-tooltip small {
   color: var(--tooltip-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 :root[data-theme="light"] .current-path code,
@@ -1254,7 +1254,7 @@ button:focus-visible {
   color: var(--muted-strong);
   background: transparent;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .breadcrumb-part button:hover:not(:disabled) {
@@ -1270,7 +1270,7 @@ button:focus-visible {
 .section-note {
   margin: 10px 0 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -1323,7 +1323,7 @@ button:focus-visible {
   color: var(--text);
   background: transparent;
   font: inherit;
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .select-control select {
@@ -1360,7 +1360,7 @@ button:focus-visible {
   color: var(--muted-strong);
   background: transparent;
   text-align: left;
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .explorer-head {
@@ -1377,7 +1377,7 @@ button:focus-visible {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 750;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -1422,7 +1422,7 @@ button:focus-visible {
   display: grid;
   place-items: center;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .detail-panel {
@@ -1445,7 +1445,7 @@ button:focus-visible {
   overflow: auto;
   color: var(--muted);
   font-family: "Cascadia Code", Consolas, monospace;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.45;
   word-break: break-all;
 }
@@ -1466,13 +1466,13 @@ button:focus-visible {
 
 .detail-panel dt {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .detail-panel dd {
   margin: 0;
   color: var(--text);
-  font-size: 10px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -1492,12 +1492,12 @@ button:focus-visible {
 
 .detail-empty strong {
   color: var(--text);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .detail-empty span {
   max-width: 220px;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -1526,7 +1526,7 @@ button:focus-visible {
 
 .duplicate-summary span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .duplicate-files {
@@ -1548,7 +1548,7 @@ button:focus-visible {
   color: var(--muted-strong);
   background: transparent;
   cursor: pointer;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .duplicate-files button:hover {
@@ -1583,7 +1583,7 @@ button:focus-visible {
 
 .duplicate-progress-copy strong {
   color: var(--text);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .duplicate-progress-copy span {
@@ -1591,7 +1591,7 @@ button:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .duplicate-progress-stats,
@@ -1619,7 +1619,7 @@ button:focus-visible {
   display: grid;
   gap: 3px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .duplicate-progress-stats strong,
@@ -1638,7 +1638,7 @@ button:focus-visible {
   overflow: hidden;
   color: var(--muted);
   font-family: "Cascadia Code", Consolas, monospace;
-  font-size: 8px;
+  font-size: 11px;
   text-overflow: ellipsis;
 }
 
@@ -1720,26 +1720,26 @@ button:focus-visible {
 
 .engine-main strong {
   color: var(--text);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .engine-main span,
 .engine-stats span {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .engine-fallback {
   grid-column: 1 / -1;
   margin: -2px 0 0 25px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
 .breadcrumb-status {
   margin-left: auto;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -1752,13 +1752,13 @@ button:focus-visible {
   padding: 0 2px;
   border-bottom: 1px solid var(--line-soft);
   color: var(--muted-strong);
-  font-size: 9px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
 .search-summary small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 @media (max-width: 760px) {
@@ -1964,7 +1964,7 @@ button:focus-visible {
   display: block;
   margin-bottom: 4px;
   color: var(--accent);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .18em;
 }
@@ -1979,7 +1979,7 @@ button:focus-visible {
 .livia-bubble > p {
   margin: 6px 0 0;
   color: var(--muted-strong);
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.58;
 }
 
@@ -2141,13 +2141,13 @@ button:focus-visible {
 }
 
 .cleanup-tray-summary strong {
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .cleanup-tray-summary small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2206,13 +2206,13 @@ button:focus-visible {
 }
 
 .cleanup-item strong {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .cleanup-item span,
 .cleanup-item small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .cleanup-item > button {
@@ -2236,7 +2236,7 @@ button:focus-visible {
 .cleanup-more {
   padding: 9px 0;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .cleanup-warning {
@@ -2269,11 +2269,11 @@ button:focus-visible {
 
 .cleanup-warning strong {
   color: var(--text);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .cleanup-warning span {
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -2296,7 +2296,7 @@ button:focus-visible {
   color: white;
   background: var(--accent);
   cursor: pointer;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 720;
 }
 
@@ -2328,20 +2328,20 @@ button:focus-visible {
   gap: 7px;
   border-bottom: 1px solid var(--line-soft);
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .cleanup-history-row strong {
   overflow: hidden;
   color: var(--muted-strong);
-  font-size: 8px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .cleanup-history-row small {
   color: #d89052;
-  font-size: 7px;
+  font-size: 10px;
 }
 
 @media (max-width: 720px) {
@@ -2383,7 +2383,7 @@ button:focus-visible {
   color: var(--muted-strong);
   background: color-mix(in srgb, var(--accent) 6%, transparent);
   cursor: pointer;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -2401,7 +2401,7 @@ button:focus-visible {
   max-width: 230px;
   overflow: hidden;
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2422,13 +2422,13 @@ button:focus-visible {
 .cleanup-history-copy > span,
 .cleanup-history-copy > small {
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .cleanup-history-copy > strong {
   overflow: hidden;
   color: var(--muted-strong);
-  font-size: 8px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2447,7 +2447,7 @@ button:focus-visible {
   gap: 5px;
   padding: 0 8px;
   border-radius: 6px;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -2477,7 +2477,7 @@ button:focus-visible {
 .cleanup-history-note {
   margin: 9px 0 0;
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
   line-height: 1.5;
 }
 
@@ -2533,13 +2533,13 @@ button:focus-visible {
 }
 
 .memory-main strong {
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .memory-main span,
 .memory-stats span {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .memory-stats {
@@ -2548,7 +2548,7 @@ button:focus-visible {
 }
 
 .memory-stats strong {
-  font-size: 8px;
+  font-size: 11px;
   color: var(--muted-strong);
 }
 
@@ -2580,13 +2580,13 @@ button:focus-visible {
 .snapshot-mini small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .snapshot-mini strong {
-  font-size: 8px;
+  font-size: 11px;
 }
 
 @media (max-width: 980px) {
@@ -2614,7 +2614,7 @@ button:focus-visible {
   padding: 0 7px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  font-size: 7px !important;
+  font-size: 10px !important;
   font-weight: 750;
   white-space: nowrap;
 }
@@ -2656,7 +2656,7 @@ button:focus-visible {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -2684,7 +2684,7 @@ button:focus-visible {
 
 .history-stat > span {
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: .08em;
 }
@@ -2705,7 +2705,7 @@ button:focus-visible {
 
 .history-stat > small {
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .history-chart {
@@ -2736,11 +2736,11 @@ button:focus-visible {
 .history-tooltip span,
 .history-tooltip small {
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .history-tooltip strong {
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .history-empty {
@@ -2750,7 +2750,7 @@ button:focus-visible {
   align-content: center;
   gap: 8px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .growth-columns {
@@ -2780,7 +2780,7 @@ button:focus-visible {
 }
 
 .growth-title strong {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .growth-row {
@@ -2799,19 +2799,19 @@ button:focus-visible {
 .growth-row > span {
   overflow: hidden;
   color: var(--muted-strong);
-  font-size: 8px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .growth-row > strong {
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .history-missing-breakdown {
   margin: 8px 0 2px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -2853,7 +2853,7 @@ button:focus-visible {
 
 .insight-rank {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2892,7 +2892,7 @@ button:focus-visible {
 
 .insight-title-line strong {
   overflow: hidden;
-  font-size: 11px;
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2902,7 +2902,7 @@ button:focus-visible {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -2921,7 +2921,7 @@ button:focus-visible {
 .insight-main p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -3039,7 +3039,7 @@ button:focus-visible {
   min-height: 72px;
   justify-content: center;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .update-version-line {
@@ -3056,17 +3056,17 @@ button:focus-visible {
 
 .update-version-line span {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .update-version-line strong {
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .update-description {
   margin: 10px 1px 0;
   color: var(--muted-strong);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -3087,7 +3087,7 @@ button:focus-visible {
 }
 
 .update-integrity span {
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -3101,12 +3101,12 @@ button:focus-visible {
   justify-content: space-between;
   gap: 10px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .update-progress-copy strong {
   color: var(--text);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .update-progress-track {
@@ -3129,7 +3129,7 @@ button:focus-visible {
   display: block;
   margin-top: 5px;
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .update-ready,
@@ -3149,13 +3149,13 @@ button:focus-visible {
 
 .update-ready strong,
 .update-up-to-date strong {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .update-ready span,
 .update-up-to-date span {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -3173,7 +3173,7 @@ button:focus-visible {
   border-radius: 8px;
   color: #e2a364;
   background: color-mix(in srgb, #d89052 7%, var(--surface-raised));
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -3231,7 +3231,7 @@ button:focus-visible {
 .update-release-notes > span {
   display: block;
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: .11em;
 }
@@ -3241,7 +3241,7 @@ button:focus-visible {
   margin: 7px 0 0;
   overflow-y: auto;
   color: var(--muted-strong);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.55;
   white-space: pre-wrap;
 }
@@ -3252,7 +3252,7 @@ button:focus-visible {
   border-left: 2px solid var(--muted);
   color: var(--muted);
   background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -3269,7 +3269,7 @@ button:focus-visible {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .update-dismiss-actions button:hover {
@@ -3359,19 +3359,19 @@ button:focus-visible {
 }
 
 .report-export-option strong {
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .report-export-option small,
 .report-export-note {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
 .report-export-option b {
   color: var(--muted-strong);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -3386,11 +3386,24 @@ button:focus-visible {
   border-radius: 7px;
   color: var(--muted-strong);
   background: color-mix(in srgb, #62d58a 6%, var(--surface-raised));
-  font-size: 8px;
+  font-size: 11px;
 }
 
 @media (max-width: 900px) {
   .report-export-popover {
     right: 12px;
   }
+}
+
+
+/* v0.7.1 — readability pass
+   The previous UI used 7–11px labels extensively. Keep the compact desktop
+   layout, but stop requiring microscope ownership as a product prerequisite. */
+@media (min-width: 900px) {
+  .report-title h1 { font-size: 30px; }
+  .review-summary strong { font-size: 24px; }
+  .section-heading h2 { font-size: 16px; }
+  .metric strong { font-size: 22px; }
+  .livia-bubble { width: min(360px, calc(100vw - 36px)); }
+  .livia-bubble > strong { font-size: 14px; }
 }
