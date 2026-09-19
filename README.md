@@ -12,11 +12,11 @@
 
 ![Windows](https://img.shields.io/badge/Windows-desktop-5969e8?style=flat-square)
 ![Linux](https://img.shields.io/badge/Linux-AppImage%20%2B%20deb-5969e8?style=flat-square)
-![Android](https://img.shields.io/badge/Android-v0.8.2%20prototype-5969e8?style=flat-square)
+![Android](https://img.shields.io/badge/Android-v0.9.0%20prototype-5969e8?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.8.2-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.9.0-5969e8?style=flat-square)
 
 </div>
 
@@ -24,7 +24,7 @@
 
 ## Visão geral
 
-A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux, agora também com um **protótipo Android na v0.8.2**. No desktop, ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir. No Android, o usuário pode continuar escolhendo apenas uma pasta via Storage Access Framework ou conceder, explicitamente, acesso amplo ao armazenamento compartilhado para uma análise mais completa.
+A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux, agora também com um **protótipo Android na v0.9.0**. No desktop, ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir. No Android, o usuário pode continuar escolhendo apenas uma pasta via Storage Access Framework ou conceder, explicitamente, acesso amplo ao armazenamento compartilhado para uma análise mais completa.
 
 Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa a construir um **índice de sessão**. Busca, filtros e drill-down trabalham nesse índice em vez de obrigar o disco a reviver a mesma caminhada toda vez que o usuário clica numa pasta. Um conceito revolucionário conhecido como “não fazer trabalho duas vezes”.
 
@@ -112,6 +112,38 @@ flowchart LR
 | Updater multiplataforma Windows/Linux | ✅ v0.7.3 |
 | Android via Storage Access Framework | ✅ v0.8.0 protótipo |
 | Android: análise do armazenamento compartilhado + marca correta | ✅ v0.8.1 protótipo |
+| Android: ícone oficial no launcher | ✅ v0.8.2 protótipo |
+| Índice com checksum, backup e recuperação automática | ✅ v0.9.0 |
+
+## v0.9.0 — Hardening e recuperação de estado
+
+A L.I.V.I.A. agora trata o índice persistente como dado que pode sobreviver a encerramento abrupto, arquivo truncado e gravação interrompida, em vez de apostar que JSON e eletricidade manterão um relacionamento saudável para sempre.
+
+### Entregas
+
+- [x] checksum SHA-256 embutido no índice persistido;
+- [x] compatibilidade de leitura com índices antigos sem checksum;
+- [x] escrita em arquivo temporário com `sync_all` antes da troca;
+- [x] preservação da geração anterior em `.bak`;
+- [x] rollback do backup se a troca final falhar;
+- [x] recuperação automática quando o índice principal está corrompido;
+- [x] fallback equivalente para o histórico de snapshots;
+- [x] indicação na interface quando o backup precisou ser restaurado;
+- [x] fala contextual da Lívia para a recuperação;
+- [x] teste automatizado que corrompe o arquivo principal e valida a restauração.
+
+```mermaid
+flowchart LR
+    A[Novo índice] --> T[Arquivo temporário]
+    T --> S[Flush + sync]
+    S --> B[Estado atual vira backup]
+    B --> P[Temporário vira principal]
+    P --> V{Checksum válido?}
+    V -->|sim| OK[Carregar índice]
+    V -->|não| BK[Validar backup]
+    BK --> R[Restaurar último estado válido]
+    R --> UI[Lívia informa a recuperação]
+```
 
 ## v0.8.2 — Ícone correto no launcher Android
 
@@ -727,7 +759,7 @@ flowchart TD
     V73 --> V8[v0.8.0 Protótipo Android]
     V8 --> V81[v0.8.1 Armazenamento amplo]
     V81 --> V82[v0.8.2 Launcher icon]
-    V82 --> V9[v0.9 Hardening multiplataforma]
+    V82 --> V9[v0.9 Hardening + recuperação]
     V9 --> I[v1.0 Desktop estável e assinado]
     I --> V11[v1.1 Android público]
 ```
@@ -787,7 +819,7 @@ flowchart TD
 - ✅ v0.8.2: marca oficial também no ícone do launcher Android;
 - ✅ UI adaptada para toque;
 - ✅ APK ARM64 debug produzido no CI;
-- v0.9: hardening, testes de dispositivo e recuperação de falhas;
+- ✅ v0.9: checksum, backup atômico e recuperação de falhas;
 - v1.1: primeira versão Android pública, assinada e preparada para distribuição.
 
 ## Design
