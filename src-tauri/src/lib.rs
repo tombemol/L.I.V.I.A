@@ -652,11 +652,25 @@ async fn restore_cleanup(
 
 
 fn persistence_dir() -> Result<PathBuf, String> {
-    let base = std::env::var_os("LOCALAPPDATA")
-        .or_else(|| std::env::var_os("APPDATA"))
-        .ok_or_else(|| "O Windows não informou uma pasta local para os dados da L.I.V.I.A.".to_string())?;
+    #[cfg(target_os = "windows")]
+    let dir = {
+        let base = std::env::var_os("LOCALAPPDATA")
+            .or_else(|| std::env::var_os("APPDATA"))
+            .ok_or_else(|| "O Windows não informou uma pasta local para os dados da L.I.V.I.A.".to_string())?;
+        PathBuf::from(base).join("L.I.V.I.A").join("state")
+    };
 
-    let dir = PathBuf::from(base).join("L.I.V.I.A").join("state");
+    #[cfg(not(target_os = "windows"))]
+    let dir = {
+        if let Some(base) = std::env::var_os("XDG_STATE_HOME") {
+            PathBuf::from(base).join("livia")
+        } else {
+            let home = std::env::var_os("HOME")
+                .ok_or_else(|| "O sistema não informou a pasta pessoal para os dados da L.I.V.I.A.".to_string())?;
+            PathBuf::from(home).join(".local").join("state").join("livia")
+        }
+    };
+
     fs::create_dir_all(&dir)
         .map_err(|error| format!("Não foi possível criar a pasta de estado: {error}"))?;
     Ok(dir)
@@ -819,26 +833,32 @@ fn cleanup_operation_id() -> String {
 }
 
 fn same_path(left: &Path, right: &Path) -> bool {
-    fn normalize(path: &Path) -> String {
-        path.to_string_lossy()
-            .replace('/', "\\")
-            .trim_end_matches('\\')
-            .to_ascii_lowercase()
+    #[cfg(target_os = "windows")]
+    {
+        fn normalize(path: &Path) -> String {
+            path.to_string_lossy()
+                .replace('/', "\\")
+                .trim_end_matches('\\')
+                .to_ascii_lowercase()
+        }
+        normalize(left) == normalize(right)
     }
 
-    normalize(left) == normalize(right)
+    #[cfg(not(target_os = "windows"))]
+    {
+        left == right
+    }
 }
 
 fn is_protected_path(target: &Path, current_exe: Option<&Path>, windows_dir: Option<&Path>) -> bool {
-    let normalized = target.to_string_lossy().to_ascii_lowercase();
-
     if let Some(exe) = current_exe {
-        if normalized == exe.to_string_lossy().to_ascii_lowercase() {
+        if same_path(target, exe) {
             return true;
         }
     }
 
     if let Some(windows) = windows_dir {
+        let normalized = target.to_string_lossy().to_ascii_lowercase();
         let windows = windows
             .to_string_lossy()
             .trim_end_matches(|value| value == '\\' || value == '/')
@@ -847,6 +867,19 @@ fn is_protected_path(target: &Path, current_exe: Option<&Path>, windows_dir: Opt
             || normalized.starts_with(&format!("{windows}\\"))
             || normalized.starts_with(&format!("{windows}/"))
         {
+            return true;
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        const SYSTEM_ROOTS: [&str; 11] = [
+            "/bin", "/boot", "/dev", "/etc", "/lib", "/lib64",
+            "/proc", "/sbin", "/sys", "/usr", "/var/lib",
+        ];
+        if SYSTEM_ROOTS.iter().any(|root| {
+            target == Path::new(root) || target.starts_with(Path::new(root))
+        }) {
             return true;
         }
     }
@@ -861,8 +894,16 @@ fn cancel_scan(state: State<'_, ScanState>) {
 
 #[tauri::command]
 fn system_drive() -> String {
-    let drive = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".to_string());
-    format!("{drive}\\")
+    #[cfg(target_os = "windows")]
+    {
+        let drive = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".to_string());
+        format!("{drive}\\")
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        "/".to_string()
+    }
 }
 
 #[tauri::command]
@@ -894,9 +935,39 @@ fn open_in_explorer(path: String) -> Result<(), String> {
             .map_err(|error| format!("Não foi possível abrir o Explorer: {error}"))
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "linux")]
     {
-        Err("Abrir no Explorer está disponível apenas no Windows.".to_string())
+        use std::process::Command;
+        let open_target = if target.is_file() {
+            target.parent().unwrap_or(&target)
+        } else {
+            &target
+        };
+
+        Command::new("xdg-open")
+            .arg(open_target)
+            .spawn()
+            .map(|_| ())
+            .map_err(|error| format!("Não foi possível abrir o gerenciador de arquivos: {error}"))
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let mut command = Command::new("open");
+        if target.is_file() {
+            command.arg("-R");
+        }
+        command
+            .arg(&target)
+            .spawn()
+            .map(|_| ())
+            .map_err(|error| format!("Não foi possível abrir o Finder: {error}"))
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
+    {
+        Err("Abrir no gerenciador de arquivos não está disponível nesta plataforma.".to_string())
     }
 }
 
@@ -999,11 +1070,21 @@ mod cleanup_tests {
         ));
     }
 
+    #[cfg(target_os = "windows")]
     #[test]
     fn compares_windows_paths_case_insensitively() {
         assert!(same_path(
             Path::new(r"C:\Users\Tom\Downloads\FILE.ISO"),
             Path::new(r"c:/users/tom/downloads/file.iso"),
+        ));
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn keeps_unix_paths_case_sensitive() {
+        assert!(!same_path(
+            Path::new("/home/tom/FILE.ISO"),
+            Path::new("/home/tom/file.iso"),
         ));
     }
 }
