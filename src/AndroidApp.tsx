@@ -450,7 +450,7 @@ export default function AndroidApp() {
           <MobileMark />
           <div>
             <strong>L.I.V.I.A.</strong>
-            <span>Android · v0.8.0</span>
+            <span>Android · v0.8.1</span>
           </div>
         </div>
 
