@@ -88,15 +88,15 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            ### v0.9.0 — hardening e recuperação de estado
+            ### v0.9.1 — hotfix de distribuição e preparação das releases estáveis
 
-            - índice persistente passa a incluir checksum SHA-256;
-            - gravação usa arquivo temporário sincronizado antes da troca;
-            - a geração anterior é preservada como backup local;
-            - índice principal corrompido é recuperado automaticamente a partir do último backup válido;
-            - histórico de snapshots também ganha fallback para backup;
-            - a Lívia informa quando precisou restaurar um estado anterior;
-            - teste automatizado corrompe deliberadamente o estado principal e exige recuperação segura;
+            - impede republicação automática de uma versão já existente;
+            - republicação passa a exigir ação manual explícita;
+            - mantém checksum, backup atômico e recuperação automática da v0.9.0;
+            - separa canal de atualização estável e prerelease;
+            - prepara verificação Authenticode por publisher para a v1.0;
+            - prepara AAB/APK Android release assinados para a v1.1;
+            - valida o patch de assinatura Android contra o Gradle real gerado pelo Tauri;
             - Windows, Linux e Android continuam validados na mesma revisão;
             - checksums SHA-256 continuam publicados para todos os artefatos.
 
