@@ -81,7 +81,7 @@ fn parse_release_version(tag: &str) -> Option<Version> {
 }
 
 fn release_channel_allowed(current: &Version, release_prerelease: bool) -> bool {
-    !current.pre.is_empty() || !release_prerelease
+    current.major == 0 || !current.pre.is_empty() || !release_prerelease
 }
 
 fn installer_asset(release: &GithubRelease) -> Option<GithubAsset> {
@@ -559,6 +559,13 @@ mod tests {
     #[test]
     fn rejects_invalid_release_version() {
         assert!(parse_release_version("release-next").is_none());
+    }
+
+    #[test]
+    fn zero_major_channel_accepts_prerelease_releases() {
+        let development = parse_release_version("v0.9.1").expect("development version");
+        assert!(release_channel_allowed(&development, true));
+        assert!(release_channel_allowed(&development, false));
     }
 
     #[test]
