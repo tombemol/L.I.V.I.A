@@ -3,12 +3,14 @@ use image::{imageops::FilterType, Rgba, RgbaImage};
 use std::{fs::File, io::BufWriter, path::Path};
 
 fn main() {
-    generate_windows_icon().expect("falha ao gerar o ícone da L.I.V.I.A.");
+    generate_app_icons().expect("falha ao gerar os ícones da L.I.V.I.A.");
     tauri_build::build()
 }
 
-fn generate_windows_icon() -> Result<(), Box<dyn std::error::Error>> {
+fn generate_app_icons() -> Result<(), Box<dyn std::error::Error>> {
     let base = draw_mark(512);
+    base.save("icons/icon.png")?;
+
     let mut icon = IconDir::new(ResourceType::Icon);
 
     for size in [16_u32, 20, 24, 32, 40, 48, 64, 128, 256] {
