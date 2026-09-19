@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "android:signing:test": "node scripts/configure-android-signing.mjs --self-test",
+    "android:signing:check": "node scripts/configure-android-signing.mjs --check",
     "android:signing:patch": "node scripts/configure-android-signing.mjs"
   },
   "dependencies": {
