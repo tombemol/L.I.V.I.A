@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.6.1-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.7.0-5969e8?style=flat-square)
 
 </div>
 
@@ -102,7 +102,8 @@ flowchart LR
 | Atualização pelo próprio aplicativo | ✅ v0.6.0 |
 | Validação SHA-256 do instalador | ✅ v0.6.0 |
 | Notas da release e controle de avisos | ✅ v0.6.1 |
-| Android | 🗓️ Futuro |
+| Exportação JSON e CSV | ✅ v0.7.0 |
+| Android | 🗓️ Protótipo na v0.8 |
 
 ## v0.2.1 — Index & Search
 
@@ -434,6 +435,22 @@ A central de atualizações agora mostra o que mudou antes do usuário baixar qu
 - [x] README alinhado ao estado real do índice persistente e à versão atual.
 
 
+## v0.7.0 — Relatórios exportáveis
+
+A análise agora pode sair da tela sem sair do computador. A L.I.V.I.A. exporta um relatório completo em JSON ou um resumo em CSV para planilhas, mantendo o princípio local-first: o usuário escolhe o destino e nenhum dado é enviado para serviço externo.
+
+### Entregas
+
+- [x] botão **Exportar** disponível no dashboard após uma análise;
+- [x] JSON completo com relatório atual, snapshots locais e duplicatas confirmadas da sessão;
+- [x] CSV com resumo, pastas, extensões, arquivos grandes, recomendações, snapshots e duplicatas;
+- [x] CSV com BOM UTF-8 e separador por ponto e vírgula para melhor compatibilidade com Excel em pt-BR;
+- [x] nome de arquivo sugerido com raiz analisada e horário;
+- [x] gravação feita pelo backend apenas em arquivos `.json` ou `.csv`;
+- [x] limite de 100 MB por exportação;
+- [x] nenhuma transmissão de dados durante a exportação.
+
+
 ## Arquitetura
 
 ```mermaid
@@ -550,8 +567,10 @@ flowchart TD
     V5 --> V51[v0.5.1 Leitura inteligente]
     V51 --> V6[v0.6.0 Atualização no app]
     V6 --> V61[v0.6.1 UX de atualização]
-    V61 --> I[v1.0 Distribuição assinada]
-    E -. plataforma paralela .-> J[Android]
+    V61 --> V7[v0.7.0 Relatórios exportáveis]
+    V7 --> I[v1.0 Distribuição assinada]
+    V7 -. plataforma paralela .-> V8[v0.8 Protótipo Android]
+    V8 --> V11[v1.1 Android público]
 ```
 
 ### v0.2.2 — Duplicatas confiáveis
@@ -594,11 +613,19 @@ flowchart TD
 - ✅ v0.6.1: opção “Agora não”;
 - ✅ v0.6.1: ignorar uma versão sem silenciar versões futuras.
 
-### Android — futuro
-- protótipo Tauri 2;
+### v0.7 — Relatórios exportáveis
+- ✅ exportação JSON completa com relatório, snapshots e duplicatas confirmadas;
+- ✅ exportação CSV amigável para Excel e similares;
+- ✅ arquivo salvo somente no caminho escolhido pelo usuário;
+- ✅ nenhuma transmissão externa durante a exportação;
+- ✅ limite de segurança de 100 MB por arquivo exportado.
+
+### Android — trilha paralela
+- v0.8: protótipo Tauri 2;
 - Storage Access Framework;
 - UI adaptada para toque;
-- compartilhamento das regras de classificação compatíveis.
+- compartilhamento das regras de classificação compatíveis;
+- primeira versão pública planejada para v1.1.
 
 ## Design
 
