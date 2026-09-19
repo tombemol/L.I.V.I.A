@@ -674,6 +674,55 @@ async fn restore_cleanup(
 }
 
 
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn android_all_files_access(app: AppHandle) -> Result<bool, String> {
+    use tauri_plugin_livia_android_storage::AndroidStorageExt;
+
+    app.android_storage()
+        .has_all_files_access()
+        .map_err(|error| format!("Não foi possível consultar o acesso amplo ao armazenamento: {error}"))
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn android_all_files_access() -> Result<bool, String> {
+    Err("O acesso amplo ao armazenamento só existe na versão Android.".to_string())
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn android_request_all_files_access(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_livia_android_storage::AndroidStorageExt;
+
+    app.android_storage()
+        .request_all_files_access()
+        .map_err(|error| format!("Não foi possível abrir a permissão de armazenamento: {error}"))
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn android_request_all_files_access() -> Result<(), String> {
+    Err("A permissão de armazenamento amplo só existe na versão Android.".to_string())
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn android_shared_storage_root(app: AppHandle) -> Result<String, String> {
+    use tauri_plugin_livia_android_storage::AndroidStorageExt;
+
+    app.android_storage()
+        .shared_storage_root()
+        .map_err(|error| format!("Não foi possível localizar o armazenamento compartilhado: {error}"))
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn android_shared_storage_root() -> Result<String, String> {
+    Err("O armazenamento compartilhado Android não existe nesta plataforma.".to_string())
+}
+
 fn persistence_dir() -> Result<PathBuf, String> {
     #[cfg(target_os = "windows")]
     let dir = {
@@ -1040,7 +1089,9 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init());
 
     #[cfg(target_os = "android")]
-    let builder = builder.plugin(tauri_plugin_android_fs::init());
+    let builder = builder
+        .plugin(tauri_plugin_android_fs::init())
+        .plugin(tauri_plugin_livia_android_storage::init());
 
     builder
         .invoke_handler(tauri::generate_handler![
@@ -1057,6 +1108,9 @@ pub fn run() {
             system_drive,
             open_in_explorer,
             save_report_file,
+            android_all_files_access,
+            android_request_all_files_access,
+            android_shared_storage_root,
             updater::check_for_update,
             updater::download_update,
             updater::install_update

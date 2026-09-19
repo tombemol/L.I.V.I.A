@@ -3462,15 +3462,12 @@ button:focus-visible {
 .android-brand-mark {
   width: 36px;
   height: 36px;
-  display: grid;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+  display: block;
+  flex: 0 0 auto;
+  border: 0;
   border-radius: 10px;
-  color: var(--text);
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--accent) 20%, var(--surface-raised)), var(--surface));
-  font-size: 18px;
-  font-weight: 900;
+  object-fit: cover;
+  background: transparent;
 }
 
 .android-icon-button {
@@ -3560,6 +3557,32 @@ button:focus-visible {
   border: 1px solid var(--line);
   color: var(--text);
   background: var(--surface);
+}
+
+.android-actions {
+  width: 100%;
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.android-actions .android-primary,
+.android-actions .android-secondary {
+  width: 100%;
+  margin-top: 0;
+}
+
+.android-permission-note {
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
+  border-radius: 11px;
+  color: var(--muted-strong);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .android-safety {

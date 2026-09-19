@@ -9,6 +9,8 @@ import {
   Sun,
   X
 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { DistributionPie } from "./components/DistributionPie";
 import { LiviaAssistant } from "./components/LiviaAssistant";
 import { formatBytes, formatDuration } from "./lib/format";
@@ -270,7 +272,14 @@ async function scanSafTree(
 }
 
 function MobileMark() {
-  return <span className="android-brand-mark" aria-hidden="true">L</span>;
+  return (
+    <img
+      className="android-brand-mark"
+      src="/livia/livia-mark.svg"
+      alt=""
+      aria-hidden="true"
+    />
+  );
 }
 
 export default function AndroidApp() {
@@ -284,6 +293,8 @@ export default function AndroidApp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null);
+  const [scanMode, setScanMode] = useState<"saf" | "device" | null>(null);
+  const [permissionNote, setPermissionNote] = useState<string | null>(null);
   const cancelRef = useRef(false);
 
   useEffect(() => {
@@ -291,6 +302,23 @@ export default function AndroidApp() {
     document.documentElement.style.colorScheme = theme;
     localStorage.setItem("livia-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    let active = true;
+    let dispose: (() => void) | undefined;
+
+    listen<ScanProgress>("scan-progress", ({ payload }) => {
+      if (active && scanMode === "device") setProgress(payload);
+    }).then((unlisten) => {
+      if (active) dispose = unlisten;
+      else unlisten();
+    });
+
+    return () => {
+      active = false;
+      dispose?.();
+    };
+  }, [scanMode]);
 
   const folderPie = useMemo(
     () =>
@@ -314,7 +342,9 @@ export default function AndroidApp() {
 
   async function chooseAndScan() {
     setError(null);
+    setPermissionNote(null);
     setSelectedFile(null);
+    setScanMode("saf");
 
     try {
       const AndroidFs = await import("tauri-plugin-android-fs-api");
@@ -363,6 +393,56 @@ export default function AndroidApp() {
     }
   }
 
+  async function scanWholeStorage() {
+    setError(null);
+    setPermissionNote(null);
+    setSelectedFile(null);
+
+    try {
+      const granted = await invoke<boolean>("android_all_files_access");
+
+      if (!granted) {
+        await invoke("android_request_all_files_access");
+        setPermissionNote(
+          "O Android abriu a permissão de acesso amplo. Ative a L.I.V.I.A., volte para o app e toque novamente em “Analisar armazenamento inteiro”."
+        );
+        return;
+      }
+
+      const root = await invoke<string>("android_shared_storage_root");
+      cancelRef.current = false;
+      setScanMode("device");
+      setBusy(true);
+      setReport(null);
+      setProgress({
+        root,
+        filesScanned: 0,
+        foldersScanned: 0,
+        skippedEntries: 0,
+        bytesScanned: 0,
+        elapsedMs: 0,
+        currentPath: root
+      });
+
+      const result = await invoke<ScanReport>("scan_path", { path: root });
+      setReport(result);
+    } catch (reason) {
+      const message =
+        reason instanceof Error
+          ? reason.message
+          : typeof reason === "string"
+            ? reason
+            : "Não foi possível analisar o armazenamento compartilhado.";
+
+      if (!message.toLocaleLowerCase("pt-BR").includes("cancelada")) {
+        setError(message);
+      }
+    } finally {
+      setBusy(false);
+      cancelRef.current = false;
+    }
+  }
+
   return (
     <div className="android-shell">
       <header className="android-topbar">
@@ -370,7 +450,7 @@ export default function AndroidApp() {
           <MobileMark />
           <div>
             <strong>L.I.V.I.A.</strong>
-            <span>Android · v0.8.0</span>
+            <span>Android · v0.8.1</span>
           </div>
         </div>
 
@@ -387,24 +467,37 @@ export default function AndroidApp() {
       <main className="android-main">
         {!report && !busy ? (
           <section className="android-intro">
-            <span className="android-kicker"><Smartphone size={15} /> PROTÓTIPO ANDROID</span>
-            <h1>Veja o que ocupa espaço sem entregar o telefone inteiro.</h1>
+            <span className="android-kicker"><Smartphone size={15} /> ANDROID</span>
+            <h1>Veja onde o telefone está escondendo espaço.</h1>
             <p>
-              Escolha uma pasta pelo seletor do Android. A L.I.V.I.A. lê somente os
-              metadados aos quais você concedeu acesso e monta o panorama localmente.
+              A L.I.V.I.A. pode analisar o armazenamento compartilhado inteiro ou,
+              se você preferir, somente uma pasta escolhida pelo seletor do Android.
+              Tudo continua sendo processado localmente.
             </p>
 
-            <button className="android-primary" type="button" onClick={chooseAndScan}>
-              <FolderOpen size={18} />
-              Escolher pasta
-            </button>
+            <div className="android-actions">
+              <button className="android-primary" type="button" onClick={scanWholeStorage}>
+                <Smartphone size={18} />
+                Analisar armazenamento inteiro
+              </button>
+
+              <button className="android-secondary" type="button" onClick={chooseAndScan}>
+                <FolderOpen size={18} />
+                Escolher uma pasta
+              </button>
+            </div>
+
+            {permissionNote ? (
+              <div className="android-permission-note">{permissionNote}</div>
+            ) : null}
 
             <div className="android-safety">
               <ShieldCheck size={19} />
               <div>
-                <strong>Somente leitura na v0.8</strong>
+                <strong>Acesso amplo opcional e somente leitura</strong>
                 <span>
-                  Sem exclusão, sem acesso irrestrito ao armazenamento e sem envio de dados.
+                  A análise inteira exige a permissão especial do Android. A L.I.V.I.A.
+                  não apaga nada nesta fase e o sistema ainda protege áreas privadas de outros apps.
                 </span>
               </div>
             </div>
@@ -413,8 +506,14 @@ export default function AndroidApp() {
 
         {busy ? (
           <section className="android-scanning">
-            <span className="android-kicker">ANALISANDO VIA SAF</span>
-            <h1>Estou contando a bagunça autorizada.</h1>
+            <span className="android-kicker">
+              {scanMode === "device" ? "ANALISANDO ARMAZENAMENTO" : "ANALISANDO VIA SAF"}
+            </span>
+            <h1>
+              {scanMode === "device"
+                ? "Estou varrendo o armazenamento compartilhado."
+                : "Estou contando a bagunça autorizada."}
+            </h1>
             <p className="android-current-path">{progress?.currentPath ?? "Preparando…"}</p>
 
             <div className="android-progress-track"><span /></div>
@@ -431,6 +530,9 @@ export default function AndroidApp() {
               type="button"
               onClick={() => {
                 cancelRef.current = true;
+                if (scanMode === "device") {
+                  void invoke("cancel_scan").catch(() => undefined);
+                }
               }}
             >
               <X size={17} />
@@ -449,7 +551,12 @@ export default function AndroidApp() {
                   {report.fileCount.toLocaleString("pt-BR")} arquivos em {report.folderCount.toLocaleString("pt-BR")} pastas · {formatDuration(report.durationMs)}
                 </p>
               </div>
-              <button className="android-icon-button" type="button" onClick={chooseAndScan} aria-label="Analisar outra pasta">
+              <button
+                className="android-icon-button"
+                type="button"
+                onClick={scanMode === "device" ? scanWholeStorage : chooseAndScan}
+                aria-label={scanMode === "device" ? "Analisar novamente" : "Analisar outra pasta"}
+              >
                 <RefreshCw size={19} />
               </button>
             </div>

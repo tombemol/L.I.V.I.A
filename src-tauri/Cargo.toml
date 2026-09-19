@@ -1,6 +1,6 @@
 [package]
 name = "livia"
-version = "0.8.0"
+version = "0.8.1"
 description = "Leitura Inteligente e Visualização de Informações de Armazenamento"
 authors = ["Antonio Silva"]
 edition = "2021"
@@ -33,3 +33,4 @@ usn-journal-rs = "0.4.1"
 
 [target.'cfg(target_os = "android")'.dependencies]
 tauri-plugin-android-fs = "=29.0.0"
+tauri-plugin-livia-android-storage = { path = "plugins/android-storage" }

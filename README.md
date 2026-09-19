@@ -12,11 +12,11 @@
 
 ![Windows](https://img.shields.io/badge/Windows-desktop-5969e8?style=flat-square)
 ![Linux](https://img.shields.io/badge/Linux-AppImage%20%2B%20deb-5969e8?style=flat-square)
-![Android](https://img.shields.io/badge/Android-v0.8%20prototype-5969e8?style=flat-square)
+![Android](https://img.shields.io/badge/Android-v0.8.1%20prototype-5969e8?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.8.0-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.8.1-5969e8?style=flat-square)
 
 </div>
 
@@ -24,7 +24,7 @@
 
 ## Visão geral
 
-A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux, agora também com um **protótipo Android na v0.8.0**. No desktop, ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir. No Android, o acesso acontece somente à pasta escolhida pelo usuário através do Storage Access Framework.
+A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux, agora também com um **protótipo Android na v0.8.1**. No desktop, ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir. No Android, o usuário pode continuar escolhendo apenas uma pasta via Storage Access Framework ou conceder, explicitamente, acesso amplo ao armazenamento compartilhado para uma análise mais completa.
 
 Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa a construir um **índice de sessão**. Busca, filtros e drill-down trabalham nesse índice em vez de obrigar o disco a reviver a mesma caminhada toda vez que o usuário clica numa pasta. Um conceito revolucionário conhecido como “não fazer trabalho duas vezes”.
 
@@ -111,6 +111,39 @@ flowchart LR
 | Linux desktop (AppImage + .deb) | ✅ v0.7.3 |
 | Updater multiplataforma Windows/Linux | ✅ v0.7.3 |
 | Android via Storage Access Framework | ✅ v0.8.0 protótipo |
+| Android: análise do armazenamento compartilhado + marca correta | ✅ v0.8.1 protótipo |
+
+## v0.8.1 — Android: armazenamento amplo + identidade correta
+
+A primeira rodada em aparelho real expôs duas coisas que emulador adora esconder por esporte: o SAF não permite selecionar a raiz do armazenamento compartilhado em Android recente e a barra superior ainda estava usando um placeholder com a letra **L**. A v0.8.1 corrige os dois pontos sem abandonar o modo conservador por pasta.
+
+### Entregas
+
+- [x] novo botão **Analisar armazenamento inteiro**;
+- [x] ponte nativa Android para solicitar `MANAGE_EXTERNAL_STORAGE` de forma explícita;
+- [x] análise do armazenamento compartilhado usando o scanner nativo da L.I.V.I.A.;
+- [x] modo SAF preservado como alternativa para analisar apenas uma pasta;
+- [x] cancelamento também funciona durante a análise ampla;
+- [x] a barra superior agora usa a marca oficial da L.I.V.I.A., em vez do placeholder **L**;
+- [x] permissão ampla continua opcional;
+- [x] Android permanece somente leitura nesta fase;
+- [x] áreas privadas protegidas de outros aplicativos continuam fora do escopo;
+- [x] release notes e pipeline atualizados para a v0.8.1.
+
+> **Escopo real do “armazenamento inteiro”**: significa o armazenamento compartilhado que o Android permite ao aplicativo administrar. O sistema operacional ainda isola dados privados de outros apps, então a L.I.V.I.A. não promete atravessar a sandbox do Android como se segurança fosse decoração.
+
+```mermaid
+flowchart LR
+    U[Usuário] --> M{Modo de análise}
+    M -->|Armazenamento inteiro| P[Permissão ampla opcional]
+    P --> S[Scanner nativo]
+    M -->|Uma pasta| SAF[Storage Access Framework]
+    SAF --> T[Árvore autorizada]
+    T --> R[Relatório local]
+    S --> R
+    R --> G[Pastas + extensões + maiores arquivos]
+    G --> L[Lívia contextual]
+```
 
 ## v0.8.0 — Protótipo Android via SAF
 
@@ -677,7 +710,8 @@ flowchart TD
     V61 --> V7[v0.7.0 Relatórios exportáveis]
     V7 --> V73[v0.7.3 Linux desktop]
     V73 --> V8[v0.8.0 Protótipo Android]
-    V8 --> V9[v0.9 Hardening multiplataforma]
+    V8 --> V81[v0.8.1 Armazenamento amplo]
+    V81 --> V9[v0.9 Hardening multiplataforma]
     V9 --> I[v1.0 Desktop estável e assinado]
     I --> V11[v1.1 Android público]
 ```
@@ -731,9 +765,10 @@ flowchart TD
 
 ### Android — trilha paralela
 - ✅ v0.8.0: protótipo Tauri 2 instalável;
-- ✅ Storage Access Framework sem acesso irrestrito ao armazenamento;
+- ✅ v0.8.0: Storage Access Framework para análise confinada a uma pasta;
+- ✅ v0.8.1: acesso amplo opcional ao armazenamento compartilhado;
+- ✅ v0.8.1: marca oficial no cabeçalho Android;
 - ✅ UI adaptada para toque;
-- ✅ scanner recursivo de metadados dentro da árvore autorizada;
 - ✅ APK ARM64 debug produzido no CI;
 - v0.9: hardening, testes de dispositivo e recuperação de falhas;
 - v1.1: primeira versão Android pública, assinada e preparada para distribuição.

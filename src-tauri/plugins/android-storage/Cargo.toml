@@ -1,0 +1,16 @@
+[package]
+name = "tauri-plugin-livia-android-storage"
+version = "0.1.0"
+edition = "2021"
+links = "tauri-plugin-livia-android-storage"
+
+[dependencies]
+tauri = "2"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+
+[target.'cfg(target_os = "android")'.dependencies]
+tauri = { version = "2", features = ["wry"] }
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }
