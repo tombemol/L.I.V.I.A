@@ -94,12 +94,6 @@ fn checksum_asset(release: &GithubRelease, installer_name: &str) -> Option<Githu
         .assets
         .iter()
         .find(|asset| asset.name.eq_ignore_ascii_case(&exact))
-        .or_else(|| {
-            release
-                .assets
-                .iter()
-                .find(|asset| asset.name.to_ascii_lowercase().ends_with(".sha256"))
-        })
         .cloned()
 }
 
@@ -311,11 +305,15 @@ pub async fn download_update(app: AppHandle) -> Result<DownloadedUpdate, String>
     })
 }
 
+fn updates_root() -> PathBuf {
+    std::env::temp_dir().join("L.I.V.I.A").join("updates")
+}
+
 fn is_safe_installer_path(path: &Path) -> Result<bool, String> {
     let canonical = fs::canonicalize(path)
         .map_err(|error| format!("O instalador baixado não pôde ser localizado: {error}"))?;
-    let temp = fs::canonicalize(std::env::temp_dir())
-        .map_err(|error| format!("A pasta temporária do Windows não pôde ser validada: {error}"))?;
+    let root = fs::canonicalize(updates_root())
+        .map_err(|error| format!("A área temporária de atualizações não pôde ser validada: {error}"))?;
 
     let file_name = canonical
         .file_name()
@@ -323,17 +321,53 @@ fn is_safe_installer_path(path: &Path) -> Result<bool, String> {
         .unwrap_or("")
         .to_ascii_lowercase();
 
-    Ok(canonical.starts_with(temp)
+    Ok(canonical.starts_with(root)
         && file_name.starts_with("l.i.v.i.a")
         && file_name.ends_with(".exe"))
 }
 
+fn sha256_file(path: &Path) -> Result<String, String> {
+    use std::io::Read;
+
+    let mut file = File::open(path)
+        .map_err(|error| format!("Não foi possível reabrir o instalador para validação: {error}"))?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0_u8; 64 * 1024];
+
+    loop {
+        let read = file
+            .read(&mut buffer)
+            .map_err(|error| format!("Não foi possível validar o instalador: {error}"))?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
 #[tauri::command]
-pub fn install_update(app: AppHandle, installer_path: String) -> Result<(), String> {
+pub fn install_update(
+    app: AppHandle,
+    installer_path: String,
+    expected_sha256: String,
+) -> Result<(), String> {
     let installer = PathBuf::from(installer_path);
 
     if !is_safe_installer_path(&installer)? {
         return Err("O instalador informado não pertence à área temporária segura da L.I.V.I.A.".to_string());
+    }
+
+    let expected = expected_sha256.trim().to_ascii_lowercase();
+    if expected.len() != 64 || !expected.chars().all(|value| value.is_ascii_hexdigit()) {
+        return Err("O checksum esperado para a atualização é inválido.".to_string());
+    }
+
+    let actual = sha256_file(&installer)?;
+    if actual != expected {
+        let _ = fs::remove_file(&installer);
+        return Err("O instalador mudou depois do download, falhou na segunda validação SHA-256 e foi descartado.".to_string());
     }
 
     #[cfg(target_os = "windows")]
