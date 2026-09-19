@@ -16,6 +16,7 @@ import { LiviaAssistant } from "./components/LiviaAssistant";
 import { formatBytes, formatDuration } from "./lib/format";
 import type { FileEntry, Recommendation, ScanProgress, ScanReport } from "./types";
 import type { EntryMetadataWithUri, FsUri } from "tauri-plugin-android-fs-api";
+import { version as appVersion } from "../package.json";
 
 const MAX_ENTRIES = 250_000;
 const LARGEST_LIMIT = 80;
@@ -450,7 +451,7 @@ export default function AndroidApp() {
           <MobileMark />
           <div>
             <strong>L.I.V.I.A.</strong>
-            <span>Android · v0.8.1</span>
+            <span>Android · v{appVersion}</span>
           </div>
         </div>
 
