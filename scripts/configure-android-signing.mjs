@@ -94,7 +94,8 @@ function main() {
     return;
   }
 
-  const target = process.argv[2] ?? "src-tauri/gen/android/app/build.gradle.kts";
+  const positional = process.argv.slice(2).find((value) => !value.startsWith("--"));
+  const target = positional ?? "src-tauri/gen/android/app/build.gradle.kts";
   const resolved = path.resolve(target);
 
   if (!fs.existsSync(resolved)) {
@@ -103,6 +104,13 @@ function main() {
 
   const source = fs.readFileSync(resolved, "utf8");
   const patched = patchAndroidSigning(source);
+
+  if (process.argv.includes("--check")) {
+    assert.notEqual(patched, source, "template já contém marcador inesperadamente");
+    assert.equal(patchAndroidSigning(patched), patched, "patch real deve ser idempotente");
+    process.stdout.write(`Template Android compatível com release signing: ${resolved}\n`);
+    return;
+  }
 
   fs.writeFileSync(resolved, patched, "utf8");
   process.stdout.write(`Android release signing configurado em ${resolved}\n`);
