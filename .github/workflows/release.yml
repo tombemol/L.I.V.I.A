@@ -1,4 +1,4 @@
-name: Release Windows
+name: Release Desktop
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  windows:
     runs-on: windows-latest
 
     steps:
@@ -46,23 +46,23 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            ### v0.7.2 — legibilidade reforçada
+            ### v0.7.3 — Linux + base multiplataforma
 
-            - segunda passada de legibilidade em textos auxiliares, tabelas, tooltips e labels;
-            - títulos, métricas, tabelas, histórico, atualizador e falas da Lívia mais legíveis;
-            - landing page pública redesenhada com microanimações e hierarquia visual mais forte;
-            - retratos da Lívia corrigidos para respeitar a proporção original da sprite e reduzir borrado;
-            - área de apoio voluntário via Pix na landing page;
-            - QR Code Pix e copia-e-cola gerados localmente, sem serviço externo;
-            - downloads continuam integrados às GitHub Releases;
-            - exportação JSON/CSV e atualização integrada da v0.7.0 continuam disponíveis.
+            - primeira build desktop oficial para Linux;
+            - pacotes AppImage e .deb;
+            - persistência seguindo XDG no Linux;
+            - abertura de pastas via gerenciador padrão;
+            - limpeza assistida mantém proteção de diretórios críticos;
+            - atualizador seleciona o instalador correto por plataforma;
+            - SHA-256 obrigatório para Windows e Linux;
+            - Windows continua disponível via NSIS.
 
-            Observação: esta pré-release ainda não possui assinatura Authenticode. O Windows SmartScreen pode exibir "Fornecedor desconhecido" até a adoção de um certificado de code signing confiável.
+            Observação: a build Windows ainda não possui assinatura Authenticode confiável e pode acionar o SmartScreen.
           releaseDraft: false
           prerelease: true
           args: --bundles nsis
 
-      - name: Publicar SHA-256 do instalador
+      - name: Publicar SHA-256 do instalador Windows
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,5 +77,69 @@ jobs:
           $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           $checksum = "$($installer.FullName).sha256"
           Set-Content -Path $checksum -Value "$hash  $($installer.Name)" -NoNewline
-
           gh release upload "v$version" $checksum --clobber
+
+  linux:
+    needs: windows
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build and publish Linux packages
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: "L.I.V.I.A. v__VERSION__"
+          releaseDraft: false
+          prerelease: true
+          args: --bundles appimage,deb
+
+      - name: Publicar SHA-256 dos pacotes Linux
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          shopt -s nullglob
+          files=(
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/deb/*.deb
+          )
+
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "Nenhum pacote Linux encontrado para gerar checksum." >&2
+            exit 1
+          fi
+
+          for installer in "${files[@]}"; do
+            checksum="${installer}.sha256"
+            hash="$(sha256sum "$installer" | awk '{print $1}')"
+            printf '%s  %s' "$hash" "$(basename "$installer")" > "$checksum"
+            gh release upload "v$version" "$checksum" --clobber
+          done

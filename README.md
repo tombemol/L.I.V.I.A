@@ -11,10 +11,11 @@
 **Entenda o que ocupa seu disco, pesquise o índice inteiro e navegue sem ficar reescaneando a mesma árvore.**
 
 ![Windows](https://img.shields.io/badge/Windows-desktop-5969e8?style=flat-square)
+![Linux](https://img.shields.io/badge/Linux-AppImage%20%2B%20deb-5969e8?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.7.2-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.7.3-5969e8?style=flat-square)
 
 </div>
 
@@ -22,7 +23,7 @@
 
 ## Visão geral
 
-A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows. Ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão.
+A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux. Ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir.
 
 Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa a construir um **índice de sessão**. Busca, filtros e drill-down trabalham nesse índice em vez de obrigar o disco a reviver a mesma caminhada toda vez que o usuário clica numa pasta. Um conceito revolucionário conhecido como “não fazer trabalho duas vezes”.
 
@@ -106,7 +107,28 @@ flowchart LR
 | Tipografia ampliada / legibilidade | ✅ v0.7.2 |
 | Landing animada + apoio via Pix | ✅ v0.7.1 |
 | Retratos da Lívia sem distorção + segunda passada de legibilidade | ✅ v0.7.2 |
+| Linux desktop (AppImage + .deb) | ✅ v0.7.3 |
+| Updater multiplataforma Windows/Linux | ✅ v0.7.3 |
 | Android | 🗓️ Protótipo na v0.8 |
+
+## v0.7.3 — Linux desktop + base multiplataforma
+
+A L.I.V.I.A. deixa de tratar “desktop” como sinônimo de Windows. O mesmo núcleo de índice, busca, duplicatas, snapshots, histórico e limpeza assistida agora possui caminho oficial de build para Linux.
+
+### Entregas
+
+- [x] CI completo em Ubuntu 22.04 além do Windows;
+- [x] pacotes Linux em AppImage e .deb;
+- [x] persistência em `$XDG_STATE_HOME/livia` ou `~/.local/state/livia`;
+- [x] abertura de pastas pelo gerenciador padrão via `xdg-open`;
+- [x] proteção explícita de diretórios críticos Unix durante limpeza assistida;
+- [x] comparação de caminhos respeita case sensitivity fora do Windows;
+- [x] updater escolhe assets por plataforma;
+- [x] AppImage e .deb exigem checksum SHA-256 publicado na release;
+- [x] Windows continua usando NSIS e os caminhos NTFS/MFT/USN;
+- [x] landing detecta Linux e entrega o pacote quando o asset está disponível.
+
+O código compartilhado continua igual onde faz sentido. O que depende do sistema operacional fica explícito. É menos “mágica multiplataforma” e mais engenharia que admite que `C:\\` e `/` não são a mesma religião.
 
 ## v0.7.2 — Legibilidade reforçada + retratos corrigidos
 
@@ -603,8 +625,9 @@ flowchart TD
     V51 --> V6[v0.6.0 Atualização no app]
     V6 --> V61[v0.6.1 UX de atualização]
     V61 --> V7[v0.7.0 Relatórios exportáveis]
-    V7 --> I[v1.0 Distribuição assinada]
-    V7 -. plataforma paralela .-> V8[v0.8 Protótipo Android]
+    V7 --> V73[v0.7.3 Linux desktop]
+    V73 --> V8[v0.8 Protótipo Android]
+    V73 --> I[v1.0 Distribuição assinada]
     V8 --> V11[v1.1 Android público]
 ```
 

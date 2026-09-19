@@ -80,14 +80,41 @@ fn parse_release_version(tag: &str) -> Option<Version> {
 }
 
 fn installer_asset(release: &GithubRelease) -> Option<GithubAsset> {
-    release
-        .assets
-        .iter()
-        .find(|asset| {
-            let name = asset.name.to_ascii_lowercase();
-            name.ends_with(".exe") && name.contains("setup")
-        })
-        .cloned()
+    #[cfg(target_os = "windows")]
+    {
+        return release
+            .assets
+            .iter()
+            .find(|asset| {
+                let name = asset.name.to_ascii_lowercase();
+                name.ends_with(".exe") && name.contains("setup")
+            })
+            .cloned();
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let appimage = release
+            .assets
+            .iter()
+            .find(|asset| asset.name.to_ascii_lowercase().ends_with(".appimage"))
+            .cloned();
+        if appimage.is_some() {
+            return appimage;
+        }
+
+        return release
+            .assets
+            .iter()
+            .find(|asset| asset.name.to_ascii_lowercase().ends_with(".deb"))
+            .cloned();
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        let _ = release;
+        None
+    }
 }
 
 fn checksum_asset(release: &GithubRelease, installer_name: &str) -> Option<GithubAsset> {
@@ -210,7 +237,14 @@ fn update_download_path(version: &Version, installer_name: &str) -> PathBuf {
     let safe_name = Path::new(installer_name)
         .file_name()
         .and_then(|name| name.to_str())
-        .unwrap_or("L.I.V.I.A-update.exe");
+        .unwrap_or_else(|| {
+            #[cfg(target_os = "windows")]
+            { "L.I.V.I.A-update.exe" }
+            #[cfg(target_os = "linux")]
+            { "L.I.V.I.A-update.AppImage" }
+            #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+            { "L.I.V.I.A-update.bin" }
+        });
 
     std::env::temp_dir()
         .join("L.I.V.I.A")
@@ -325,9 +359,20 @@ fn is_safe_installer_path(path: &Path) -> Result<bool, String> {
         .unwrap_or("")
         .to_ascii_lowercase();
 
+    let allowed_extension = {
+        #[cfg(target_os = "windows")]
+        { file_name.ends_with(".exe") }
+
+        #[cfg(target_os = "linux")]
+        { file_name.ends_with(".appimage") || file_name.ends_with(".deb") }
+
+        #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+        { false }
+    };
+
     Ok(canonical.starts_with(root)
         && file_name.starts_with("l.i.v.i.a")
-        && file_name.ends_with(".exe"))
+        && allowed_extension)
 }
 
 fn sha256_file(path: &Path) -> Result<String, String> {
@@ -383,10 +428,44 @@ pub fn install_update(
         Ok(())
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        let file_name = installer
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+
+        if file_name.ends_with(".appimage") {
+            let mut permissions = fs::metadata(&installer)
+                .map_err(|error| format!("Não foi possível validar as permissões da atualização: {error}"))?
+                .permissions();
+            permissions.set_mode(0o755);
+            fs::set_permissions(&installer, permissions)
+                .map_err(|error| format!("Não foi possível preparar o AppImage: {error}"))?;
+
+            Command::new(&installer)
+                .spawn()
+                .map_err(|error| format!("Não foi possível abrir o AppImage atualizado: {error}"))?;
+        } else if file_name.ends_with(".deb") {
+            Command::new("xdg-open")
+                .arg(&installer)
+                .spawn()
+                .map_err(|error| format!("Não foi possível abrir o instalador .deb: {error}"))?;
+        } else {
+            return Err("O pacote de atualização Linux não possui formato suportado.".to_string());
+        }
+
+        app.exit(0);
+        Ok(())
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
     {
         let _ = app;
-        Err("A atualização automática desta release está disponível apenas no Windows.".to_string())
+        Err("A atualização automática ainda não está disponível nesta plataforma.".to_string())
     }
 }
 
