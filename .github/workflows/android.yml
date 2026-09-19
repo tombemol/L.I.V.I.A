@@ -1,0 +1,83 @@
+name: Android prototype
+
+on:
+  push:
+    branches: ["feature/v0.8*", "feature/v0.9*", "main"]
+    paths:
+      - "src/**"
+      - "src-tauri/**"
+      - "package.json"
+      - ".github/workflows/android.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "src-tauri/**"
+      - "package.json"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Rust + Android targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Resolve NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          ndk_version="$(ls -1 "$ANDROID_HOME/ndk" | sort -V | tail -n 1)"
+          test -n "$ndk_version"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Frontend build
+        run: npm run build
+
+      - name: Initialize Android project
+        run: npm run tauri android init -- --ci
+
+      - name: Build installable prototype APK
+        run: npm run tauri android build -- --debug --apk --target aarch64 --ci
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LIVIA-v0.8-android-aarch64
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
