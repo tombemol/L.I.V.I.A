@@ -35,6 +35,7 @@ import { DistributionPie } from "./components/DistributionPie";
 import { LiviaAssistant } from "./components/LiviaAssistant";
 import { CleanupTray } from "./components/CleanupTray";
 import { StorageHistory } from "./components/StorageHistory";
+import { StorageInsights } from "./components/StorageInsights";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
 import type {
   CachedIndexResponse,
@@ -776,7 +777,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.5.0</span>
+            <span className="version-pill">v0.5.1</span>
           </div>
         </header>
 
@@ -808,7 +809,7 @@ export default function App() {
             <div className="scan-note">
               <Database size={15} />
               <span>
-                O índice fica apenas nesta sessão. {progress?.skippedEntries ?? 0} entradas
+                O índice concluído fica salvo localmente. {progress?.skippedEntries ?? 0} entradas
                 inacessíveis foram ignoradas.
               </span>
             </div>
@@ -830,7 +831,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.5.0</span>
+            <span className="version-pill">v0.5.1</span>
           </div>
         </header>
 
@@ -996,6 +997,7 @@ export default function App() {
       </section>
 
       <StorageHistory snapshots={snapshots} />
+      <StorageInsights report={report} snapshots={snapshots} duplicateReport={duplicateReport} />
 
       <section className="analysis-grid">
         <article className="surface treemap-surface">
@@ -1422,7 +1424,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.5.0 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
+        <span>v0.5.1 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
