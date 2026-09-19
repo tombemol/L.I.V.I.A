@@ -46,14 +46,13 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            ### v0.8.1 — Android: armazenamento amplo + identidade correta
+            ### v0.8.2 — Android: launcher icon corrigido
 
-            - novo modo **Analisar armazenamento inteiro** no Android;
-            - solicitação explícita e opcional de acesso amplo ao armazenamento compartilhado;
-            - o seletor SAF continua disponível para analisar somente uma pasta;
-            - o ícone da barra superior agora usa a marca oficial da L.I.V.I.A.;
-            - Android permanece somente leitura nesta fase;
-            - áreas privadas protegidas pelo Android continuam fora do escopo da análise;
+            - corrige o ícone do aplicativo exibido pelo launcher do Android;
+            - gera os mipmaps oficiais depois de `tauri android init`, impedindo o logo padrão do Tauri de sobreviver à build;
+            - mantém o novo modo **Analisar armazenamento inteiro**;
+            - mantém o SAF para análise limitada a uma pasta;
+            - Android continua somente leitura nesta fase;
             - Windows continua via NSIS;
             - Linux continua via AppImage e .deb;
             - checksums SHA-256 publicados para todos os artefatos.
@@ -195,6 +194,16 @@ jobs:
 
       - name: Initialize Tauri Android project
         run: npm run tauri -- android init --ci
+
+      - name: Generate official Android launcher icons
+        run: npm run tauri -- icon public/livia/livia-mark.svg
+
+      - name: Verify Android launcher icon assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          test -f src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
       - name: Build Android prototype APK
         run: npm run tauri -- android build --debug --apk --target aarch64
