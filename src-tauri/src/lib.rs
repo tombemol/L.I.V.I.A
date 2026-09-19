@@ -1,4 +1,5 @@
 mod scanner;
+mod updater;
 
 use scanner::{
     DuplicateProgress, DuplicateReport, FileEntry, ScanIndex, ScanProgress, ScanReport, SearchResponse,
@@ -916,7 +917,10 @@ pub fn run() {
             restore_cleanup,
             cancel_scan,
             system_drive,
-            open_in_explorer
+            open_in_explorer,
+            updater::check_for_update,
+            updater::download_update,
+            updater::install_update
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar a L.I.V.I.A.");
