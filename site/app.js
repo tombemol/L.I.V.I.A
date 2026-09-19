@@ -69,6 +69,8 @@ const downloadVersion = $("download-version");
 const windowsDownload = $("windows-download");
 const linuxDownload = $("linux-download");
 const linuxLabel = $("linux-label");
+const androidDownload = $("android-download");
+const androidLabel = $("android-label");
 const donationDialog = $("donation-dialog");
 const copyFeedback = $("copy-feedback");
 
@@ -76,7 +78,7 @@ function detectPlatform() {
   const platform = (navigator.userAgentData?.platform || navigator.platform || "").toLowerCase();
   const ua = (navigator.userAgent || "").toLowerCase();
 
-  if (ua.includes("android")) return "other";
+  if (ua.includes("android")) return "android";
   if (platform.includes("win") || ua.includes("windows")) return "windows";
   if (platform.includes("linux") || ua.includes("linux")) return "linux";
   return "other";
@@ -95,7 +97,18 @@ function formatVersion(tag) {
   return (tag || "").replace(/^v/i, "");
 }
 
-function applyPlatformPreference(platform, windowsAsset, linuxAsset) {
+function applyPlatformPreference(platform, windowsAsset, linuxAsset, androidAsset) {
+  if (platform === "android") {
+    if (androidAsset) {
+      primary.href = androidAsset.asset.browser_download_url;
+      primaryLabel.textContent = "Baixar protótipo Android";
+    } else {
+      primary.href = RELEASES_PAGE;
+      primaryLabel.textContent = "Android em preparação";
+    }
+    return;
+  }
+
   if (platform === "linux") {
     if (linuxAsset) {
       primary.href = linuxAsset.asset.browser_download_url;
@@ -145,6 +158,11 @@ async function hydrateReleases() {
       (asset) => /\.(?:AppImage|deb)$/i.test(asset.name)
     );
 
+    const androidAsset = pickAsset(
+      releases,
+      (asset) => /android.*(?:arm64|aarch64).*\.apk$/i.test(asset.name) || /\.apk$/i.test(asset.name)
+    );
+
     if (visible) {
       const version = formatVersion(visible.tag_name);
       const suffix = visible.prerelease ? " · pré-release" : "";
@@ -173,7 +191,16 @@ async function hydrateReleases() {
       linuxLabel.textContent = "Em preparação";
     }
 
-    applyPlatformPreference(platform, windowsAsset, linuxAsset);
+    if (androidAsset) {
+      androidDownload.hidden = false;
+      androidDownload.href = androidAsset.asset.browser_download_url;
+      androidDownload.classList.add("ready");
+      androidLabel.textContent = "Experimental ↓";
+      androidDownload.querySelector("small").textContent =
+        `ARM64 · v${formatVersion(androidAsset.release.tag_name)}`;
+    }
+
+    applyPlatformPreference(platform, windowsAsset, linuxAsset, androidAsset);
   } catch (error) {
     console.warn("Não foi possível consultar as releases agora:", error);
     releaseStatus.textContent = "Downloads via GitHub Releases";
@@ -181,8 +208,10 @@ async function hydrateReleases() {
     primary.href = RELEASES_PAGE;
     windowsDownload.href = RELEASES_PAGE;
     linuxDownload.href = RELEASES_PAGE;
+    androidDownload.href = RELEASES_PAGE;
 
-    if (platform === "linux") primaryLabel.textContent = "Ver versões para Linux";
+    if (platform === "android") primaryLabel.textContent = "Ver versão Android";
+    else if (platform === "linux") primaryLabel.textContent = "Ver versões para Linux";
     else primaryLabel.textContent = "Ver downloads";
   }
 }
