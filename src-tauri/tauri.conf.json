@@ -31,6 +31,7 @@
       "nsis"
     ],
     "icon": [
+      "icons/icon.png",
       "icons/icon.ico"
     ],
     "category": "Utility",
