@@ -1233,9 +1233,15 @@ footer {
   background: #fff;
 }
 
-.qr-frame img {
+.pix-qr,
+.pix-qr svg {
+  display: block;
   width: 100%;
   aspect-ratio: 1;
+}
+
+.pix-qr svg {
+  shape-rendering: crispEdges;
 }
 
 .pix-label {
