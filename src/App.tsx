@@ -37,6 +37,7 @@ import { CleanupTray } from "./components/CleanupTray";
 import { StorageHistory } from "./components/StorageHistory";
 import { StorageInsights } from "./components/StorageInsights";
 import { UpdateCenter } from "./components/UpdateCenter";
+import { ReportExport } from "./components/ReportExport";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
 import type {
   CachedIndexResponse,
@@ -888,6 +889,11 @@ export default function App() {
         <div className="topbar-actions">
           <UpdateCenter />
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          <ReportExport
+            report={report}
+            snapshots={snapshots}
+            duplicateReport={duplicateReport}
+          />
           <button className="secondary-action" type="button" onClick={refreshIndex}>
             <RefreshCw size={15} /> Atualizar índice
           </button>
