@@ -98,7 +98,7 @@ async function scanSafTree(
         continue;
       }
 
-      let name = readName(raw);
+      let name: string = readName(raw) ?? "";
       if (!name) {
         try {
           name = await AndroidFs.getName(uri);
