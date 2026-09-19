@@ -27,6 +27,7 @@ struct GithubRelease {
     draft: bool,
     published_at: Option<String>,
     html_url: String,
+    body: Option<String>,
     assets: Vec<GithubAsset>,
 }
 
@@ -47,6 +48,7 @@ pub struct UpdateInfo {
     release_name: Option<String>,
     published_at: Option<String>,
     release_url: Option<String>,
+    release_notes: Option<String>,
     installer_name: Option<String>,
     installer_size: Option<u64>,
 }
@@ -186,6 +188,7 @@ pub async fn check_for_update() -> Result<UpdateInfo, String> {
             release_name: candidate.release.name,
             published_at: candidate.release.published_at,
             release_url: Some(candidate.release.html_url),
+            release_notes: candidate.release.body,
             installer_name: Some(candidate.installer.name),
             installer_size: Some(candidate.installer.size),
         }),
@@ -196,6 +199,7 @@ pub async fn check_for_update() -> Result<UpdateInfo, String> {
             release_name: None,
             published_at: None,
             release_url: None,
+            release_notes: None,
             installer_name: None,
             installer_size: None,
         }),

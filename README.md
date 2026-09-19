@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.5.0--dev-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.6.1-5969e8?style=flat-square)
 
 </div>
 
@@ -101,6 +101,7 @@ flowchart LR
 | Leitura inteligente e prioridades locais | ✅ v0.5.1 |
 | Atualização pelo próprio aplicativo | ✅ v0.6.0 |
 | Validação SHA-256 do instalador | ✅ v0.6.0 |
+| Notas da release e controle de avisos | ✅ v0.6.1 |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -417,6 +418,22 @@ flowchart LR
 ```
 
 
+## v0.6.1 — Atualização menos insistente
+
+A central de atualizações agora mostra o que mudou antes do usuário baixar qualquer coisa e respeita quando uma versão específica não interessa naquele momento. A atualização continua explícita e validada por SHA-256; a diferença é que o aplicativo parou de tratar toda nova release como uma emergência nacional.
+
+### Entregas
+
+- [x] exibir notas da release diretamente na central de atualizações;
+- [x] limitar a prévia para manter o painel legível;
+- [x] opção **Agora não** para fechar o aviso sem alterar preferências;
+- [x] opção **Ignorar esta versão** persistida localmente;
+- [x] versão ignorada deixa de abrir o painel automaticamente;
+- [x] uma versão posterior volta a ser sinalizada normalmente;
+- [x] download e instalação continuam disponíveis manualmente mesmo para uma versão ignorada;
+- [x] README alinhado ao estado real do índice persistente e à versão atual.
+
+
 ## Arquitetura
 
 ```mermaid
@@ -474,7 +491,7 @@ O índice armazena metadados de cada arquivo encontrado:
 
 A interface pede ao backend somente os resultados necessários. O backend filtra o índice completo e devolve até 200 itens por consulta.
 
-O índice não é persistido entre execuções ainda. Persistência incremental via USN Journal fica para uma fase posterior.
+O índice é persistido localmente desde a v0.4.0 e restaurado na abertura seguinte. Em volumes NTFS elegíveis, a v0.4.1 também tenta atualizar esse índice de forma incremental via USN Journal antes de recorrer a uma reindexação completa.
 
 ## Segurança
 
@@ -497,7 +514,7 @@ As builds ainda não possuem assinatura Authenticode com certificado confiável.
 | Desktop | Tauri 2 |
 | Scanner compatível | Rust + WalkDir |
 | Scanner acelerado | NTFS MFT via Windows |
-| Índice | memória da sessão |
+| Índice | memória + persistência local versionada |
 | Interface | React 19 + TypeScript |
 | Visualização | Recharts |
 | CI / Release | GitHub Actions |
@@ -532,7 +549,8 @@ flowchart TD
     H --> V5[v0.5.0 Histórico visual]
     V5 --> V51[v0.5.1 Leitura inteligente]
     V51 --> V6[v0.6.0 Atualização no app]
-    V6 --> I[v1.0 Distribuição assinada]
+    V6 --> V61[v0.6.1 UX de atualização]
+    V61 --> I[v1.0 Distribuição assinada]
     E -. plataforma paralela .-> J[Android]
 ```
 
@@ -571,7 +589,10 @@ flowchart TD
 - ✅ download dentro do aplicativo;
 - ✅ checksum SHA-256 publicado pela pipeline;
 - ✅ validação de integridade antes da execução;
-- ✅ instalação iniciada somente por ação explícita do usuário.
+- ✅ instalação iniciada somente por ação explícita do usuário;
+- ✅ v0.6.1: notas da release no painel;
+- ✅ v0.6.1: opção “Agora não”;
+- ✅ v0.6.1: ignorar uma versão sem silenciar versões futuras.
 
 ### Android — futuro
 - protótipo Tauri 2;
