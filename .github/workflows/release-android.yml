@@ -71,6 +71,9 @@ jobs:
       - name: Initialize Tauri Android project
         run: npm run tauri -- android init --ci
 
+      - name: Validate signing patch against generated Gradle
+        run: npm run android:signing:check
+
       - name: Generate official Android launcher icons
         run: npm run tauri -- icon public/livia/livia-mark.svg
 
@@ -87,10 +90,14 @@ jobs:
 
           keytool -list             -keystore "$key_path"             -storepass "$ANDROID_KEY_PASSWORD"             -alias "$ANDROID_KEY_ALIAS" >/dev/null
 
+          escape_property() {
+            printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/:/\\:/g' -e 's/=/\\=/g'
+          }
+
           {
-            echo "keyAlias=$ANDROID_KEY_ALIAS"
-            echo "password=$ANDROID_KEY_PASSWORD"
-            echo "storeFile=$key_path"
+            printf 'keyAlias=%s\n' "$(escape_property "$ANDROID_KEY_ALIAS")"
+            printf 'password=%s\n' "$(escape_property "$ANDROID_KEY_PASSWORD")"
+            printf 'storeFile=%s\n' "$(escape_property "$key_path")"
           } > src-tauri/gen/android/keystore.properties
 
       - name: Configure release signing
