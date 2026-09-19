@@ -701,7 +701,7 @@ button:focus-visible {
 
 .pie-center span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 760;
   letter-spacing: 0.13em;
 }
@@ -802,7 +802,7 @@ button:focus-visible {
 .pie-legend-copy small,
 .pie-legend-value small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .pie-legend-value {
@@ -850,7 +850,7 @@ button:focus-visible {
 
 .pie-tooltip small {
   color: var(--tooltip-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .treemap-wrap {
@@ -995,7 +995,7 @@ button:focus-visible {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .recommendation-action:hover,
@@ -1061,7 +1061,7 @@ button:focus-visible {
 .file-head {
   min-height: 32px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 760;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1377,7 +1377,7 @@ button:focus-visible {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -1638,7 +1638,7 @@ button:focus-visible {
   overflow: hidden;
   color: var(--muted);
   font-family: "Cascadia Code", Consolas, monospace;
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
 }
 
@@ -1732,7 +1732,7 @@ button:focus-visible {
   grid-column: 1 / -1;
   margin: -2px 0 0 25px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1758,7 +1758,7 @@ button:focus-visible {
 
 .search-summary small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 @media (max-width: 760px) {
@@ -1964,7 +1964,7 @@ button:focus-visible {
   display: block;
   margin-bottom: 4px;
   color: var(--accent);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .18em;
 }
@@ -2147,7 +2147,7 @@ button:focus-visible {
 .cleanup-tray-summary small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2212,7 +2212,7 @@ button:focus-visible {
 .cleanup-item span,
 .cleanup-item small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .cleanup-item > button {
@@ -2236,7 +2236,7 @@ button:focus-visible {
 .cleanup-more {
   padding: 9px 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .cleanup-warning {
@@ -2273,7 +2273,7 @@ button:focus-visible {
 }
 
 .cleanup-warning span {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -2328,20 +2328,20 @@ button:focus-visible {
   gap: 7px;
   border-bottom: 1px solid var(--line-soft);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .cleanup-history-row strong {
   overflow: hidden;
   color: var(--muted-strong);
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .cleanup-history-row small {
   color: #d89052;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 @media (max-width: 720px) {
@@ -2383,7 +2383,7 @@ button:focus-visible {
   color: var(--muted-strong);
   background: color-mix(in srgb, var(--accent) 6%, transparent);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -2401,7 +2401,7 @@ button:focus-visible {
   max-width: 230px;
   overflow: hidden;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2422,13 +2422,13 @@ button:focus-visible {
 .cleanup-history-copy > span,
 .cleanup-history-copy > small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .cleanup-history-copy > strong {
   overflow: hidden;
   color: var(--muted-strong);
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2447,7 +2447,7 @@ button:focus-visible {
   gap: 5px;
   padding: 0 8px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -2477,7 +2477,7 @@ button:focus-visible {
 .cleanup-history-note {
   margin: 9px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -2539,7 +2539,7 @@ button:focus-visible {
 .memory-main span,
 .memory-stats span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .memory-stats {
@@ -2548,7 +2548,7 @@ button:focus-visible {
 }
 
 .memory-stats strong {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted-strong);
 }
 
@@ -2580,13 +2580,13 @@ button:focus-visible {
 .snapshot-mini small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .snapshot-mini strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 @media (max-width: 980px) {
@@ -2614,7 +2614,7 @@ button:focus-visible {
   padding: 0 7px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  font-size: 10px !important;
+  font-size: 12px !important;
   font-weight: 750;
   white-space: nowrap;
 }
@@ -2656,7 +2656,7 @@ button:focus-visible {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -2684,7 +2684,7 @@ button:focus-visible {
 
 .history-stat > span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .08em;
 }
@@ -2705,7 +2705,7 @@ button:focus-visible {
 
 .history-stat > small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .history-chart {
@@ -2736,7 +2736,7 @@ button:focus-visible {
 .history-tooltip span,
 .history-tooltip small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .history-tooltip strong {
@@ -2799,19 +2799,19 @@ button:focus-visible {
 .growth-row > span {
   overflow: hidden;
   color: var(--muted-strong);
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .growth-row > strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .history-missing-breakdown {
   margin: 8px 0 2px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -2902,7 +2902,7 @@ button:focus-visible {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -3056,7 +3056,7 @@ button:focus-visible {
 
 .update-version-line span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .update-version-line strong {
@@ -3087,7 +3087,7 @@ button:focus-visible {
 }
 
 .update-integrity span {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -3101,7 +3101,7 @@ button:focus-visible {
   justify-content: space-between;
   gap: 10px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .update-progress-copy strong {
@@ -3129,7 +3129,7 @@ button:focus-visible {
   display: block;
   margin-top: 5px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .update-ready,
@@ -3155,7 +3155,7 @@ button:focus-visible {
 .update-ready span,
 .update-up-to-date span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -3173,7 +3173,7 @@ button:focus-visible {
   border-radius: 8px;
   color: #e2a364;
   background: color-mix(in srgb, #d89052 7%, var(--surface-raised));
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -3231,7 +3231,7 @@ button:focus-visible {
 .update-release-notes > span {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .11em;
 }
@@ -3241,7 +3241,7 @@ button:focus-visible {
   margin: 7px 0 0;
   overflow-y: auto;
   color: var(--muted-strong);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.55;
   white-space: pre-wrap;
 }
@@ -3252,7 +3252,7 @@ button:focus-visible {
   border-left: 2px solid var(--muted);
   color: var(--muted);
   background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -3269,7 +3269,7 @@ button:focus-visible {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .update-dismiss-actions button:hover {
@@ -3365,13 +3365,13 @@ button:focus-visible {
 .report-export-option small,
 .report-export-note {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
 .report-export-option b {
   color: var(--muted-strong);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -3386,7 +3386,7 @@ button:focus-visible {
   border-radius: 7px;
   color: var(--muted-strong);
   background: color-mix(in srgb, #62d58a 6%, var(--surface-raised));
-  font-size: 11px;
+  font-size: 12px;
 }
 
 @media (max-width: 900px) {
