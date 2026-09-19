@@ -46,6 +46,7 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
+            - leitura inteligente local com prioridades baseadas em snapshots, crescimento, fila de revisão e duplicatas confirmadas;
             - histórico visual do armazenamento com gráfico temporal e filtros de período;
             - comparação de crescimento/redução por pasta e extensão;
             - snapshots agora guardam breakdown resumido de pastas e tipos;
