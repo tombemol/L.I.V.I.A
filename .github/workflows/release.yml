@@ -13,7 +13,32 @@ permissions:
   contents: write
 
 jobs:
+  channel:
+    runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect release channel
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          major="${version%%.*}"
+
+          if [[ "$version" == *-* || "$major" == "0" ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "Versão estável $version: a publicação automática de prerelease será ignorada."
+          fi
+
   windows:
+    needs: channel
+    if: needs.channel.outputs.prerelease == 'true'
     runs-on: windows-latest
 
     steps:

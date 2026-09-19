@@ -115,6 +115,34 @@ flowchart LR
 | Android: ícone oficial no launcher | ✅ v0.8.2 protótipo |
 | Índice com checksum, backup e recuperação automática | ✅ v0.9.0 |
 
+## Preparação da v1.0 — Desktop estável e assinado
+
+A base técnica da release estável passa a tratar **canal de atualização** e **identidade do publisher** como parte da segurança, não como enfeite de marketing.
+
+### Gate já preparado
+
+- [x] builds estáveis ignoram GitHub Releases marcadas como prerelease;
+- [x] builds de teste continuam podendo acompanhar release candidates;
+- [x] updater mantém validação SHA-256 em duas etapas;
+- [x] builds Windows assinadas embutem o thumbprint esperado do publisher;
+- [x] antes de executar uma atualização, a build assinada valida Authenticode e exige o mesmo thumbprint;
+- [x] pipeline automática de prerelease não publica versões SemVer estáveis;
+- [x] workflow manual da v1.0 exige certificado, senha e servidor de timestamp;
+- [x] o instalador é verificado após a assinatura e **antes** da criação da release estável;
+- [x] Linux entra na mesma release estável com AppImage/.deb e checksums;
+- [ ] certificado de code signing confiável configurado nos GitHub Secrets;
+- [ ] primeira execução real do workflow estável com a versão `1.0.0`.
+
+### Credenciais externas necessárias
+
+O repositório **não** armazena chave privada. Para publicar a v1.0 pelo fluxo PFX, o ambiente do GitHub precisa receber:
+
+- `WINDOWS_CERTIFICATE`: PFX codificado em Base64;
+- `WINDOWS_CERTIFICATE_PASSWORD`: senha de exportação do PFX;
+- `WINDOWS_TIMESTAMP_URL`: variável do repositório apontando para o timestamp server recomendado pela autoridade certificadora.
+
+Sem essas três entradas o workflow falha antes da publicação. Uma release chamada “assinada” sem assinatura seria um conceito bastante inovador, mas não particularmente útil.
+
 ## v0.9.0 — Hardening e recuperação de estado
 
 A L.I.V.I.A. agora trata o índice persistente como dado que pode sobreviver a encerramento abrupto, arquivo truncado e gravação interrompida, em vez de apostar que JSON e eletricidade manterão um relacionamento saudável para sempre.
