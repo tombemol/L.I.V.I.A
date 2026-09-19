@@ -12,11 +12,11 @@
 
 ![Windows](https://img.shields.io/badge/Windows-desktop-5969e8?style=flat-square)
 ![Linux](https://img.shields.io/badge/Linux-AppImage%20%2B%20deb-5969e8?style=flat-square)
-![Android](https://img.shields.io/badge/Android-v0.8.1%20prototype-5969e8?style=flat-square)
+![Android](https://img.shields.io/badge/Android-v0.8.2%20prototype-5969e8?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.8.1-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.8.2-5969e8?style=flat-square)
 
 </div>
 
@@ -24,7 +24,7 @@
 
 ## Visão geral
 
-A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux, agora também com um **protótipo Android na v0.8.1**. No desktop, ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir. No Android, o usuário pode continuar escolhendo apenas uma pasta via Storage Access Framework ou conceder, explicitamente, acesso amplo ao armazenamento compartilhado para uma análise mais completa.
+A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux, agora também com um **protótipo Android na v0.8.2**. No desktop, ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir. No Android, o usuário pode continuar escolhendo apenas uma pasta via Storage Access Framework ou conceder, explicitamente, acesso amplo ao armazenamento compartilhado para uma análise mais completa.
 
 Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa a construir um **índice de sessão**. Busca, filtros e drill-down trabalham nesse índice em vez de obrigar o disco a reviver a mesma caminhada toda vez que o usuário clica numa pasta. Um conceito revolucionário conhecido como “não fazer trabalho duas vezes”.
 
@@ -112,6 +112,21 @@ flowchart LR
 | Updater multiplataforma Windows/Linux | ✅ v0.7.3 |
 | Android via Storage Access Framework | ✅ v0.8.0 protótipo |
 | Android: análise do armazenamento compartilhado + marca correta | ✅ v0.8.1 protótipo |
+
+## v0.8.2 — Ícone correto no launcher Android
+
+A v0.8.1 corrigiu a marca **dentro do aplicativo**, mas o Android continuou exibindo o logo padrão do template Tauri no launcher. O motivo era simples e irritante: `tauri android init` recria o projeto Android com os mipmaps padrão, e a pipeline não regenerava os ícones depois dessa etapa.
+
+### Entregas
+
+- [x] executar `tauri icon` **depois** de `tauri android init` no CI e na release;
+- [x] usar `public/livia/livia-mark.svg` como fonte única da identidade visual;
+- [x] gerar os mipmaps `ic_launcher` em todas as densidades Android;
+- [x] validar a existência dos assets antes de compilar o APK;
+- [x] remover o nome de artefato de CI preso na antiga v0.8.0;
+- [x] preservar o ícone correto também nas próximas releases.
+
+> A documentação oficial do Tauri recomenda exatamente esse fluxo para trocar o ícone Android após a inicialização do projeto. Porque aparentemente até um ícone precisa de ritual de invocação próprio.
 
 ## v0.8.1 — Android: armazenamento amplo + identidade correta
 
@@ -711,7 +726,8 @@ flowchart TD
     V7 --> V73[v0.7.3 Linux desktop]
     V73 --> V8[v0.8.0 Protótipo Android]
     V8 --> V81[v0.8.1 Armazenamento amplo]
-    V81 --> V9[v0.9 Hardening multiplataforma]
+    V81 --> V82[v0.8.2 Launcher icon]
+    V82 --> V9[v0.9 Hardening multiplataforma]
     V9 --> I[v1.0 Desktop estável e assinado]
     I --> V11[v1.1 Android público]
 ```
@@ -768,6 +784,7 @@ flowchart TD
 - ✅ v0.8.0: Storage Access Framework para análise confinada a uma pasta;
 - ✅ v0.8.1: acesso amplo opcional ao armazenamento compartilhado;
 - ✅ v0.8.1: marca oficial no cabeçalho Android;
+- ✅ v0.8.2: marca oficial também no ícone do launcher Android;
 - ✅ UI adaptada para toque;
 - ✅ APK ARM64 debug produzido no CI;
 - v0.9: hardening, testes de dispositivo e recuperação de falhas;
