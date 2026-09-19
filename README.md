@@ -99,6 +99,8 @@ flowchart LR
 | Histórico visual do armazenamento | ✅ v0.5.0 |
 | Crescimento por pasta e extensão | ✅ v0.5.0 |
 | Leitura inteligente e prioridades locais | ✅ v0.5.1 |
+| Atualização pelo próprio aplicativo | ✅ v0.6.0 |
+| Validação SHA-256 do instalador | ✅ v0.6.0 |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -381,6 +383,40 @@ A L.I.V.I.A. agora cruza os dados que já coleta para montar uma fila de atenç�
 - [x] layout responsivo em tema claro e escuro.
 
 
+## v0.6.0 — Atualização pelo próprio aplicativo
+
+A L.I.V.I.A. agora consegue cuidar do caminho entre uma release publicada e a instalação no computador. O aplicativo consulta as releases do projeto, identifica versões superiores à instalada, baixa o instalador e valida a integridade antes de oferecê-lo ao usuário.
+
+### Entregas
+
+- [x] verificação automática discreta ao abrir o aplicativo;
+- [x] verificação manual pela versão exibida na barra superior;
+- [x] suporte às pré-releases atuais do projeto;
+- [x] download do instalador sem abrir navegador;
+- [x] progresso de download dentro da interface;
+- [x] SHA-256 publicado automaticamente pela pipeline;
+- [x] validação obrigatória do SHA-256 antes da execução;
+- [x] instalador inválido é apagado e nunca executado;
+- [x] prevenção de downgrade;
+- [x] execução limitada ao instalador temporário esperado da L.I.V.I.A.;
+- [x] instalação continua explícita: o usuário decide quando abrir o instalador;
+- [x] falhas de rede não impedem o restante do aplicativo de funcionar.
+
+```mermaid
+flowchart LR
+    A[L.I.V.I.A. instalada] --> B[Consultar GitHub Releases]
+    B --> C{Existe versão maior?}
+    C -->|não| D[Continuar normalmente]
+    C -->|sim| E[Baixar instalador]
+    E --> F[Baixar checksum]
+    F --> G{SHA-256 confere?}
+    G -->|não| H[Descartar instalador]
+    G -->|sim| I[Oferecer instalação]
+    I --> J[Usuário confirma]
+    J --> K[Abrir instalador e fechar app]
+```
+
+
 ## Arquitetura
 
 ```mermaid
@@ -529,6 +565,13 @@ flowchart TD
 - índice persistente;
 - USN Journal para atualizar somente o que mudou;
 - comparação de crescimento entre períodos.
+
+### v0.6 — Atualização integrada
+- ✅ consulta de versões publicadas no GitHub Releases;
+- ✅ download dentro do aplicativo;
+- ✅ checksum SHA-256 publicado pela pipeline;
+- ✅ validação de integridade antes da execução;
+- ✅ instalação iniciada somente por ação explícita do usuário.
 
 ### Android — futuro
 - protótipo Tauri 2;
