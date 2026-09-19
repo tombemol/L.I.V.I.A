@@ -36,6 +36,7 @@ import { LiviaAssistant } from "./components/LiviaAssistant";
 import { CleanupTray } from "./components/CleanupTray";
 import { StorageHistory } from "./components/StorageHistory";
 import { StorageInsights } from "./components/StorageInsights";
+import { UpdateCenter } from "./components/UpdateCenter";
 import { formatAge, formatBytes, formatDuration, shortPath } from "./lib/format";
 import type {
   CachedIndexResponse,
@@ -777,7 +778,7 @@ export default function App() {
           <Brand detail="Indexando armazenamento" />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.5.1</span>
+            <UpdateCenter />
           </div>
         </header>
 
@@ -831,7 +832,7 @@ export default function App() {
           <Brand />
           <div className="topbar-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <span className="version-pill">v0.5.1</span>
+            <UpdateCenter />
           </div>
         </header>
 
@@ -885,6 +886,7 @@ export default function App() {
       <header className="topbar report-topbar">
         <Brand detail={shortPath(report.root, 54)} />
         <div className="topbar-actions">
+          <UpdateCenter />
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <button className="secondary-action" type="button" onClick={refreshIndex}>
             <RefreshCw size={15} /> Atualizar índice
@@ -1424,7 +1426,7 @@ export default function App() {
 
       <footer className="app-footer">
         <ShieldCheck size={14} />
-        <span>v0.5.1 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
+        <span>v0.6.0 · índice de sessão · limpeza assistida com desfazer seguro na sessão.</span>
       </footer>
 
       {error ? <div className="floating-error">{error}</div> : null}
