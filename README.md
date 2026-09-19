@@ -131,6 +131,24 @@ A v0.9.1 consolida o hardening da 0.9 e corrige a própria esteira de publicaç�
 - [x] validação do signing patch Android contra o template real do Tauri;
 - [x] documentação dos bloqueios externos em issues do repositório.
 
+## Code signing policy
+
+**Free code signing provided by SignPath.io, certificate by SignPath Foundation.**
+
+A política se aplica às releases oficiais Windows identificadas como assinadas após a aprovação e integração do projeto com a SignPath Foundation. Builds históricas, experimentais ou anteriores à integração podem continuar sem assinatura.
+
+- **Committer e reviewer:** [Antonio Silva (@tombemol)](https://github.com/tombemol)
+- **Signing approver:** [Antonio Silva (@tombemol)](https://github.com/tombemol)
+- solicitações de assinatura exigem aprovação manual;
+- somente artefatos produzidos a partir do código-fonte e dos workflows oficiais da L.I.V.I.A. podem ser assinados;
+- releases oficiais continuam publicadas no GitHub Releases e acompanhadas por checksums SHA-256.
+
+Documentos públicos:
+
+- [Página oficial de downloads](https://tombemol.github.io/L.I.V.I.A/download.html)
+- [Política de privacidade](https://tombemol.github.io/L.I.V.I.A/privacy.html)
+- [Code signing policy completa](https://tombemol.github.io/L.I.V.I.A/code-signing.html)
+
 ## Preparação da v1.1 — Android público e assinado
 
 A trilha Android agora possui um caminho separado para **artefatos de produção**, sem misturar a build debug de testes com o pacote que um dia vai para a Play Store.
