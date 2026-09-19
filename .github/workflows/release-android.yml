@@ -52,10 +52,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Rust + Android target
+      - name: Rust + Android targets
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -97,10 +97,10 @@ jobs:
         run: npm run android:signing:patch
 
       - name: Build signed Android App Bundle
-        run: npm run tauri -- android build --aab --target aarch64
+        run: npm run tauri -- android build --aab
 
       - name: Build signed Android APK
-        run: npm run tauri -- android build --apk --target aarch64
+        run: npm run tauri -- android build --apk
 
       - name: Verify signatures and prepare checksums
         id: artifacts
@@ -121,8 +121,8 @@ jobs:
           out="$RUNNER_TEMP/livia-android-release"
           mkdir -p "$out"
 
-          aab_out="$out/L.I.V.I.A._${version}_android-arm64-release.aab"
-          apk_out="$out/L.I.V.I.A._${version}_android-arm64-release.apk"
+          aab_out="$out/L.I.V.I.A._${version}_android-universal-release.aab"
+          apk_out="$out/L.I.V.I.A._${version}_android-universal-release.apk"
 
           cp "$aab" "$aab_out"
           cp "$apk" "$apk_out"
