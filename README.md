@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.7.1-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.7.2-5969e8?style=flat-square)
 
 </div>
 
@@ -103,9 +103,26 @@ flowchart LR
 | Validação SHA-256 do instalador | ✅ v0.6.0 |
 | Notas da release e controle de avisos | ✅ v0.6.1 |
 | Exportação JSON e CSV | ✅ v0.7.0 |
-| Tipografia ampliada / legibilidade | ✅ v0.7.1 |
+| Tipografia ampliada / legibilidade | ✅ v0.7.2 |
 | Landing animada + apoio via Pix | ✅ v0.7.1 |
+| Retratos da Lívia sem distorção + segunda passada de legibilidade | ✅ v0.7.2 |
 | Android | 🗓️ Protótipo na v0.8 |
+
+## v0.7.2 — Legibilidade reforçada + retratos corrigidos
+
+A interface passa por uma segunda revisão de escala visual com foco em monitores de alta resolução. Textos auxiliares, labels, tabelas, tooltips e falas da Lívia deixam de depender de tamanhos microscópicos.
+
+### Entregas
+
+- [x] aumento controlado dos textos de 8–14 px em toda a interface;
+- [x] botões, labels, métricas e textos secundários mais legíveis;
+- [x] retrato da Lívia passa a respeitar a proporção real da sprite;
+- [x] avatar desktop e mobile deixam de esticar cada expressão para um quadrado;
+- [x] cards de expressão da landing usam escala menor e mais nítida;
+- [x] microtextos da landing ampliados;
+- [x] Pix copia-e-cola mantido com CRC válido e sem valor fixo.
+
+A sprite original ainda é um bitmap compacto. Esta release evita ampliar e deformar esse arquivo além do necessário; a troca por arte-fonte em resolução maior continua prevista assim que o asset mestre estiver disponível.
 
 ## v0.2.1 — Index & Search
 

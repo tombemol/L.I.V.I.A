@@ -46,12 +46,12 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            ### Legibilidade + apresentação
+            ### v0.7.2 — legibilidade reforçada
 
-            - fontes pequenas do aplicativo ampliadas em toda a interface;
+            - segunda passada de legibilidade em textos auxiliares, tabelas, tooltips e labels;
             - títulos, métricas, tabelas, histórico, atualizador e falas da Lívia mais legíveis;
             - landing page pública redesenhada com microanimações e hierarquia visual mais forte;
-            - sprites da Lívia exibidos por expressão, evitando ampliar a tira inteira;
+            - retratos da Lívia corrigidos para respeitar a proporção original da sprite e reduzir borrado;
             - área de apoio voluntário via Pix na landing page;
             - QR Code Pix e copia-e-cola gerados localmente, sem serviço externo;
             - downloads continuam integrados às GitHub Releases;
