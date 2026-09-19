@@ -155,12 +155,22 @@ jobs:
       - name: Initialize Tauri Android project
         run: npm run tauri -- android init --ci
 
+      - name: Generate official Android launcher icons
+        run: npm run tauri -- icon public/livia/livia-mark.svg
+
+      - name: Verify Android launcher icon assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          test -f src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
       - name: Build installable Android prototype
         run: npm run tauri -- android build --debug --apk --target aarch64
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: LIVIA-v0.8.0-android-aarch64-debug
+          name: LIVIA-android-aarch64-debug
           path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
