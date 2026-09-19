@@ -25,6 +25,7 @@ struct GithubRelease {
     tag_name: String,
     name: Option<String>,
     draft: bool,
+    prerelease: bool,
     published_at: Option<String>,
     html_url: String,
     body: Option<String>,
@@ -172,6 +173,12 @@ async fn latest_candidate() -> Result<Option<ReleaseCandidate>, String> {
 
     for release in releases {
         if release.draft {
+            continue;
+        }
+
+        // Builds estáveis não saltam para release candidates/prereleases.
+        // Uma build prerelease (ex.: 1.0.0-rc.1) ainda pode acompanhar o canal de testes.
+        if current.pre.is_empty() && release.prerelease {
             continue;
         }
 
@@ -375,6 +382,65 @@ fn is_safe_installer_path(path: &Path) -> Result<bool, String> {
         && allowed_extension)
 }
 
+#[cfg(target_os = "windows")]
+fn verify_authenticode_signature(path: &Path) -> Result<(), String> {
+    let Some(expected_thumbprint) = option_env!("LIVIA_WINDOWS_SIGNER_THUMBPRINT") else {
+        // Builds anteriores à 1.0 não possuem identidade de assinatura embutida.
+        // O SHA-256 continua sendo obrigatório; a verificação de publisher entra
+        // automaticamente nas builds compiladas pelo workflow estável.
+        return Ok(());
+    };
+
+    let expected = expected_thumbprint
+        .chars()
+        .filter(|value| !value.is_whitespace())
+        .collect::<String>()
+        .to_ascii_uppercase();
+
+    if expected.is_empty() {
+        return Err("A identidade Authenticode esperada está vazia nesta build.".to_string());
+    }
+
+    let script = r#"
+$signature = Get-AuthenticodeSignature -LiteralPath $env:LIVIA_VERIFY_PATH
+if ($signature.Status -ne 'Valid' -or -not $signature.SignerCertificate) {
+  exit 2
+}
+[Console]::Out.Write($signature.SignerCertificate.Thumbprint.ToUpperInvariant())
+"#;
+
+    let output = Command::new("powershell.exe")
+        .args(["-NoProfile", "-NonInteractive", "-Command", script])
+        .env("LIVIA_VERIFY_PATH", path)
+        .output()
+        .map_err(|error| format!("Não foi possível validar a assinatura Authenticode: {error}"))?;
+
+    if !output.status.success() {
+        return Err(
+            "A atualização não possui uma assinatura Authenticode válida e foi bloqueada."
+                .to_string(),
+        );
+    }
+
+    let actual = String::from_utf8_lossy(&output.stdout)
+        .trim()
+        .to_ascii_uppercase();
+
+    if actual != expected {
+        return Err(
+            "A atualização foi assinada por um certificado diferente do publisher esperado e foi bloqueada."
+                .to_string(),
+        );
+    }
+
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn verify_authenticode_signature(_path: &Path) -> Result<(), String> {
+    Ok(())
+}
+
 fn sha256_file(path: &Path) -> Result<String, String> {
     use std::io::Read;
 
@@ -417,6 +483,11 @@ pub fn install_update(
     if actual != expected {
         let _ = fs::remove_file(&installer);
         return Err("O instalador mudou depois do download, falhou na segunda validação SHA-256 e foi descartado.".to_string());
+    }
+
+    if let Err(error) = verify_authenticode_signature(&installer) {
+        let _ = fs::remove_file(&installer);
+        return Err(error);
     }
 
     #[cfg(target_os = "windows")]
@@ -484,6 +555,15 @@ mod tests {
     #[test]
     fn rejects_invalid_release_version() {
         assert!(parse_release_version("release-next").is_none());
+    }
+
+    #[test]
+    fn stable_versions_have_no_prerelease_identifier() {
+        let stable = parse_release_version("v1.0.0").expect("stable version");
+        let candidate = parse_release_version("v1.1.0-rc.1").expect("prerelease version");
+
+        assert!(stable.pre.is_empty());
+        assert!(!candidate.pre.is_empty());
     }
 
     #[test]
