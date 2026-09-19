@@ -14,3 +14,9 @@ Thumbs.db
 *.log
 npm-debug.log*
 src-tauri/gen/
+
+# Android signing material — never commit private keys
+*.jks
+*.keystore
+keystore.properties
+android-signing-secrets.txt

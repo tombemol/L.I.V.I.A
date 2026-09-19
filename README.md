@@ -172,6 +172,14 @@ A trilha Android agora possui um caminho separado para **artefatos de produção
 
 ### Secrets necessários
 
+Para gerar a upload key no Windows sem colocar material privado dentro do repositório:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\create-android-upload-key.ps1
+```
+
+Guia completo: [docs/ANDROID_RELEASE.md](docs/ANDROID_RELEASE.md)
+
 O workflow `Android public release artifacts` exige:
 
 - `ANDROID_KEY_BASE64`: conteúdo Base64 do keystore JKS;
