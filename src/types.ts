@@ -165,6 +165,7 @@ export type CachedIndexResponse = {
   report: ScanReport;
   savedAtSecs: number;
   snapshots: StorageSnapshot[];
+  recoveredFromBackup: boolean;
 };
 
 
