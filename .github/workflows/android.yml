@@ -42,9 +42,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Rust + Android targets
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -55,13 +52,16 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
-      - name: Resolve NDK
+      - name: Resolve preinstalled Android SDK and NDK
         shell: bash
         run: |
           set -euo pipefail
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           ndk_version="$(ls -1 "$ANDROID_HOME/ndk" | sort -V | tail -n 1)"
           test -n "$ndk_version"
           echo "NDK_HOME=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
+          echo "Using Android SDK at $ANDROID_HOME"
+          echo "Using NDK $ndk_version"
 
       - name: Install dependencies
         run: npm install
