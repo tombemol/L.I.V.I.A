@@ -114,6 +114,40 @@ flowchart LR
 | Android: análise do armazenamento compartilhado + marca correta | ✅ v0.8.1 protótipo |
 | Android: ícone oficial no launcher | ✅ v0.8.2 protótipo |
 | Índice com checksum, backup e recuperação automática | ✅ v0.9.0 |
+| Pipeline Android release assinada (AAB + APK) | ✅ preparação v1.1 |
+
+## Preparação da v1.1 — Android público e assinado
+
+A trilha Android agora possui um caminho separado para **artefatos de produção**, sem misturar a build debug de testes com o pacote que um dia vai para a Play Store.
+
+### Gate já preparado
+
+- [x] patcher idempotente do `build.gradle.kts` gerado pelo Tauri;
+- [x] configuração de `signingConfigs.release` aplicada somente após `tauri android init`;
+- [x] keystore materializado apenas no runner do GitHub Actions;
+- [x] validação do alias e senha com `keytool` antes do build;
+- [x] AAB release assinado para todas as ABIs suportadas;
+- [x] APK release assinado como artefato auxiliar;
+- [x] validação do AAB com `jarsigner`;
+- [x] validação do APK com `apksigner`;
+- [x] SHA-256 dos dois artefatos;
+- [x] workflow separado da build debug atual;
+- [ ] upload key/keystore configurada nos GitHub Secrets;
+- [ ] primeiro AAB enviado manualmente à Play Console;
+- [ ] Play App Signing habilitado e identidade de publicação confirmada;
+- [ ] publicação automatizada via Google Play Developer API em fase posterior.
+
+### Secrets necessários
+
+O workflow `Android public release artifacts` exige:
+
+- `ANDROID_KEY_BASE64`: conteúdo Base64 do keystore JKS;
+- `ANDROID_KEY_ALIAS`: alias da upload key;
+- `ANDROID_KEY_PASSWORD`: senha do keystore/chave usada pelo fluxo.
+
+O keystore e o arquivo `keystore.properties` nunca entram no repositório. A pasta gerada `src-tauri/gen/` já permanece ignorada pelo Git.
+
+O primeiro upload do AAB na Play Console continua manual: é nessa etapa que o Google valida o bundle identifier e a assinatura inicial. Depois disso podemos ligar a automação de publicação sem fingir que a Play Store é uma pasta de rede com botão “copiar”. 
 
 ## Preparação da v1.0 — Desktop estável e assinado
 
@@ -789,7 +823,7 @@ flowchart TD
     V81 --> V82[v0.8.2 Launcher icon]
     V82 --> V9[v0.9 Hardening + recuperação]
     V9 --> I[v1.0 Desktop estável e assinado]
-    I --> V11[v1.1 Android público]
+    I --> V11[v1.1 Android público e assinado]
 ```
 
 ### v0.2.2 — Duplicatas confiáveis
