@@ -81,14 +81,17 @@ struct ScanState {
     cancel: Arc<AtomicBool>,
     running: Arc<AtomicBool>,
     index: Arc<RwLock<Option<ScanIndex>>>,
+    #[cfg(not(target_os = "android"))]
     cleanup_undo: Arc<Mutex<VecDeque<CleanupUndoRecord>>>,
 }
 
+#[cfg(not(target_os = "android"))]
 struct CleanupUndoItem {
     trash_item: trash::TrashItem,
     file: FileEntry,
 }
 
+#[cfg(not(target_os = "android"))]
 struct CleanupUndoRecord {
     id: String,
     index_root: String,
@@ -376,6 +379,7 @@ async fn find_duplicates(
     .map_err(|error| format!("Falha ao verificar duplicatas: {error}"))?
 }
 
+#[cfg(not(target_os = "android"))]
 #[tauri::command]
 async fn move_to_trash(
     state: State<'_, ScanState>,
@@ -557,6 +561,7 @@ async fn move_to_trash(
 }
 
 
+#[cfg(not(target_os = "android"))]
 #[tauri::command]
 async fn restore_cleanup(
     state: State<'_, ScanState>,
@@ -648,6 +653,24 @@ async fn restore_cleanup(
     })
     .await
     .map_err(|error| format!("Falha ao desfazer a limpeza: {error}"))?
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn move_to_trash(
+    _state: State<'_, ScanState>,
+    _paths: Vec<String>,
+) -> Result<CleanupResult, String> {
+    Err("A limpeza assistida ainda não está disponível no protótipo Android. A v0.8 opera somente leitura.".to_string())
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn restore_cleanup(
+    _state: State<'_, ScanState>,
+    _operation_id: String,
+) -> Result<CleanupRestoreResult, String> {
+    Err("O desfazer da limpeza não é usado no protótipo Android porque a v0.8 não remove arquivos.".to_string())
 }
 
 
@@ -1012,9 +1035,14 @@ fn save_report_file(path: String, content: String) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .manage(ScanState::default())
-        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_dialog::init());
+
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(tauri_plugin_android_fs::init());
+
+    builder
         .invoke_handler(tauri::generate_handler![
             scan_path,
             load_cached_index,

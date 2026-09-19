@@ -12,10 +12,11 @@
 
 ![Windows](https://img.shields.io/badge/Windows-desktop-5969e8?style=flat-square)
 ![Linux](https://img.shields.io/badge/Linux-AppImage%20%2B%20deb-5969e8?style=flat-square)
+![Android](https://img.shields.io/badge/Android-v0.8%20prototype-5969e8?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.7.3-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.8.0-5969e8?style=flat-square)
 
 </div>
 
@@ -23,7 +24,7 @@
 
 ## Visão geral
 
-A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux. Ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir.
+A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux, agora também com um **protótipo Android na v0.8.0**. No desktop, ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir. No Android, o acesso acontece somente à pasta escolhida pelo usuário através do Storage Access Framework.
 
 Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa a construir um **índice de sessão**. Busca, filtros e drill-down trabalham nesse índice em vez de obrigar o disco a reviver a mesma caminhada toda vez que o usuário clica numa pasta. Um conceito revolucionário conhecido como “não fazer trabalho duas vezes”.
 
@@ -109,7 +110,48 @@ flowchart LR
 | Retratos da Lívia sem distorção + segunda passada de legibilidade | ✅ v0.7.2 |
 | Linux desktop (AppImage + .deb) | ✅ v0.7.3 |
 | Updater multiplataforma Windows/Linux | ✅ v0.7.3 |
-| Android | 🗓️ Protótipo na v0.8 |
+| Android via Storage Access Framework | ✅ v0.8.0 protótipo |
+
+## v0.8.0 — Protótipo Android via SAF
+
+A L.I.V.I.A. agora possui um **APK Android funcional e instalável**, construído com Tauri 2 e acesso ao armazenamento pelo **Storage Access Framework (SAF)**. O protótipo não pede acesso irrestrito ao aparelho: o usuário escolhe uma pasta e a análise fica confinada à árvore autorizada.
+
+### Entregas
+
+- [x] projeto Android inicializado pelo Tauri 2 em CI;
+- [x] APK ARM64 debug gerado automaticamente;
+- [x] seleção de pasta pelo picker nativo do Android;
+- [x] persistência da permissão da URI escolhida quando o provedor permite;
+- [x] leitura recursiva de metadados via SAF;
+- [x] tamanho total, quantidade de arquivos e quantidade de pastas;
+- [x] ranking dos maiores arquivos;
+- [x] distribuição por pasta e extensão;
+- [x] gráficos donut reaproveitados da interface desktop;
+- [x] Lívia contextual integrada à interface móvel;
+- [x] tema claro/escuro e layout touch-first;
+- [x] cancelamento da análise;
+- [x] limite de segurança de 250 mil entradas no protótipo;
+- [x] nenhuma solicitação de `MANAGE_EXTERNAL_STORAGE`;
+- [x] limpeza, restauração e updater desktop bloqueados no Android;
+- [x] CI validando Windows, Linux e Android na mesma revisão.
+
+### Segurança do protótipo
+
+A v0.8.0 no Android é **somente leitura**. Ela enumera metadados das URIs autorizadas e monta o relatório localmente. Não remove arquivos, não tenta contornar o modelo de permissões do Android e não envia o índice para serviços externos.
+
+O APK desta fase é uma **build debug ARM64 para testes**, não uma distribuição de Play Store. A versão pública Android continua prevista para a v1.1, quando entram assinatura de release, AAB, testes de dispositivo e fluxo de atualização próprio da plataforma.
+
+```mermaid
+flowchart LR
+    U[Usuário] --> P[Picker Android]
+    P --> SAF[Storage Access Framework]
+    SAF --> URI[Árvore autorizada]
+    URI --> S[Scanner de metadados]
+    S --> R[Relatório local]
+    R --> G[Pastas + extensões + maiores arquivos]
+    G --> L[Lívia contextual]
+    S -. sem exclusão .-> X[Somente leitura]
+```
 
 ## v0.7.3 — Linux desktop + base multiplataforma
 
@@ -586,6 +628,7 @@ As builds ainda não possuem assinatura Authenticode com certificado confiável.
 | Camada | Tecnologia |
 | --- | --- |
 | Desktop | Tauri 2 |
+| Android | Tauri 2 + Storage Access Framework |
 | Scanner compatível | Rust + WalkDir |
 | Scanner acelerado | NTFS MFT via Windows |
 | Índice | memória + persistência local versionada |
@@ -600,10 +643,17 @@ npm install
 npm run tauri dev
 ```
 
-Build Windows:
+Build desktop:
 
 ```bash
 npm run tauri build
+```
+
+Protótipo Android:
+
+```bash
+npm run tauri -- android init
+npm run tauri -- android build --debug --apk --target aarch64
 ```
 
 ## Roadmap
@@ -626,9 +676,10 @@ flowchart TD
     V6 --> V61[v0.6.1 UX de atualização]
     V61 --> V7[v0.7.0 Relatórios exportáveis]
     V7 --> V73[v0.7.3 Linux desktop]
-    V73 --> V8[v0.8 Protótipo Android]
-    V73 --> I[v1.0 Distribuição assinada]
-    V8 --> V11[v1.1 Android público]
+    V73 --> V8[v0.8.0 Protótipo Android]
+    V8 --> V9[v0.9 Hardening multiplataforma]
+    V9 --> I[v1.0 Desktop estável e assinado]
+    I --> V11[v1.1 Android público]
 ```
 
 ### v0.2.2 — Duplicatas confiáveis
@@ -679,11 +730,13 @@ flowchart TD
 - ✅ limite de segurança de 100 MB por arquivo exportado.
 
 ### Android — trilha paralela
-- v0.8: protótipo Tauri 2;
-- Storage Access Framework;
-- UI adaptada para toque;
-- compartilhamento das regras de classificação compatíveis;
-- primeira versão pública planejada para v1.1.
+- ✅ v0.8.0: protótipo Tauri 2 instalável;
+- ✅ Storage Access Framework sem acesso irrestrito ao armazenamento;
+- ✅ UI adaptada para toque;
+- ✅ scanner recursivo de metadados dentro da árvore autorizada;
+- ✅ APK ARM64 debug produzido no CI;
+- v0.9: hardening, testes de dispositivo e recuperação de falhas;
+- v1.1: primeira versão Android pública, assinada e preparada para distribuição.
 
 ## Design
 

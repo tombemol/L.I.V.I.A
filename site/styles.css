@@ -990,7 +990,7 @@ h2 {
 
 .download-options {
   display: grid;
-  grid-template-columns: repeat(2,1fr);
+  grid-template-columns: repeat(3,1fr);
   gap: 12px;
 }
 
@@ -1015,6 +1015,14 @@ h2 {
 
 .platform-card.ready {
   background: rgba(139,124,255,.065);
+}
+
+.platform-card.experimental {
+  border-color: rgba(114,215,232,.2);
+}
+
+.platform-card.experimental b {
+  color: var(--accent-2);
 }
 
 .platform-icon {
