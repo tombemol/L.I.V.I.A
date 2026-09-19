@@ -4,11 +4,13 @@ mod updater;
 use scanner::{
     DuplicateProgress, DuplicateReport, FileEntry, ScanIndex, ScanProgress, ScanReport, SearchResponse,
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{HashSet, VecDeque},
     ffi::OsString,
-    fs,
+    fs::{self, File},
+    io::Write,
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -28,6 +30,8 @@ const SNAPSHOT_LIMIT: usize = 60;
 struct PersistedIndexEnvelope {
     schema_version: u32,
     saved_at_secs: u64,
+    #[serde(default)]
+    checksum_sha256: Option<String>,
     index: ScanIndex,
 }
 
@@ -63,6 +67,7 @@ struct CachedIndexResponse {
     report: ScanReport,
     saved_at_secs: u64,
     snapshots: Vec<StorageSnapshot>,
+    recovered_from_backup: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -178,7 +183,7 @@ async fn load_cached_index(
     let index_state = Arc::clone(&state.index);
 
     tauri::async_runtime::spawn_blocking(move || {
-        let Some(envelope) = load_persisted_index()? else {
+        let Some((envelope, recovered_from_backup)) = load_persisted_index()? else {
             return Ok(None);
         };
 
@@ -195,6 +200,7 @@ async fn load_cached_index(
             report,
             saved_at_secs: envelope.saved_at_secs,
             snapshots,
+            recovered_from_backup,
         }))
     })
     .await
@@ -715,6 +721,22 @@ fn now_secs() -> u64 {
         .as_secs()
 }
 
+fn backup_path(path: &Path) -> PathBuf {
+    let name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("state.json");
+    path.with_file_name(format!("{name}.bak"))
+}
+
+fn temp_path(path: &Path) -> PathBuf {
+    let name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("state.json");
+    path.with_file_name(format!("{name}.tmp"))
+}
+
 fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> Result<(), String> {
     let parent = path
         .parent()
@@ -722,19 +744,107 @@ fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> Result<(), String>
     fs::create_dir_all(parent)
         .map_err(|error| format!("Não foi possível criar a pasta de estado: {error}"))?;
 
-    let temp = path.with_extension("json.tmp");
+    let temp = temp_path(path);
+    let backup = backup_path(path);
     let bytes = serde_json::to_vec(value)
         .map_err(|error| format!("Não foi possível serializar o estado: {error}"))?;
-    fs::write(&temp, bytes)
-        .map_err(|error| format!("Não foi possível gravar o estado temporário: {error}"))?;
 
-    if path.exists() {
-        fs::remove_file(path)
-            .map_err(|error| format!("Não foi possível substituir o estado anterior: {error}"))?;
+    if temp.exists() {
+        let _ = fs::remove_file(&temp);
     }
 
-    fs::rename(&temp, path)
-        .map_err(|error| format!("Não foi possível concluir a gravação do estado: {error}"))
+    {
+        let mut file = File::create(&temp)
+            .map_err(|error| format!("Não foi possível criar o estado temporário: {error}"))?;
+        file.write_all(&bytes)
+            .map_err(|error| format!("Não foi possível gravar o estado temporário: {error}"))?;
+        file.sync_all()
+            .map_err(|error| format!("Não foi possível sincronizar o estado temporário: {error}"))?;
+    }
+
+    if path.exists() {
+        if backup.exists() {
+            fs::remove_file(&backup)
+                .map_err(|error| format!("Não foi possível renovar o backup do estado: {error}"))?;
+        }
+        fs::rename(path, &backup)
+            .map_err(|error| format!("Não foi possível preservar o estado anterior: {error}"))?;
+    }
+
+    if let Err(error) = fs::rename(&temp, path) {
+        if backup.exists() && !path.exists() {
+            let _ = fs::rename(&backup, path);
+        }
+        let _ = fs::remove_file(&temp);
+        return Err(format!("Não foi possível concluir a gravação do estado: {error}"));
+    }
+
+    Ok(())
+}
+
+fn index_checksum(index: &ScanIndex) -> Result<String, String> {
+    let bytes = serde_json::to_vec(index)
+        .map_err(|error| format!("Não foi possível serializar o índice para validação: {error}"))?;
+    let digest = Sha256::digest(bytes);
+    Ok(digest.iter().map(|byte| format!("{byte:02x}")).collect())
+}
+
+fn validate_index_envelope(envelope: PersistedIndexEnvelope) -> Result<PersistedIndexEnvelope, String> {
+    if envelope.schema_version != PERSISTENCE_SCHEMA {
+        return Err(format!(
+            "schema incompatível: esperado {}, encontrado {}",
+            PERSISTENCE_SCHEMA, envelope.schema_version
+        ));
+    }
+
+    if let Some(expected) = envelope.checksum_sha256.as_deref() {
+        let actual = index_checksum(&envelope.index)?;
+        if !actual.eq_ignore_ascii_case(expected) {
+            return Err("checksum SHA-256 divergente".to_string());
+        }
+    }
+
+    Ok(envelope)
+}
+
+fn read_index_file(path: &Path) -> Result<PersistedIndexEnvelope, String> {
+    let content = fs::read_to_string(path)
+        .map_err(|error| format!("não foi possível ler {}: {error}", path.display()))?;
+    let envelope: PersistedIndexEnvelope = serde_json::from_str(&content)
+        .map_err(|error| format!("JSON inválido em {}: {error}", path.display()))?;
+    validate_index_envelope(envelope)
+}
+
+fn read_json_with_backup<T: DeserializeOwned>(
+    path: &Path,
+    label: &str,
+) -> Result<Option<(T, bool)>, String> {
+    let backup = backup_path(path);
+
+    if !path.exists() && !backup.exists() {
+        return Ok(None);
+    }
+
+    if path.exists() {
+        match fs::read_to_string(path)
+            .map_err(|error| error.to_string())
+            .and_then(|content| serde_json::from_str::<T>(&content).map_err(|error| error.to_string()))
+        {
+            Ok(value) => return Ok(Some((value, false))),
+            Err(primary_error) if !backup.exists() => {
+                return Err(format!("O {label} está corrompido: {primary_error}"));
+            }
+            Err(_) => {}
+        }
+    }
+
+    let content = fs::read_to_string(&backup)
+        .map_err(|error| format!("Não foi possível ler o backup de {label}: {error}"))?;
+    let value = serde_json::from_str::<T>(&content)
+        .map_err(|error| format!("O backup de {label} também está corrompido: {error}"))?;
+
+    let _ = fs::copy(&backup, path);
+    Ok(Some((value, true)))
 }
 
 fn save_persisted_index(index: &ScanIndex) -> Result<u64, String> {
@@ -742,6 +852,7 @@ fn save_persisted_index(index: &ScanIndex) -> Result<u64, String> {
     let envelope = PersistedIndexEnvelope {
         schema_version: PERSISTENCE_SCHEMA,
         saved_at_secs,
+        checksum_sha256: Some(index_checksum(index)?),
         index: index.clone(),
     };
 
@@ -749,33 +860,36 @@ fn save_persisted_index(index: &ScanIndex) -> Result<u64, String> {
     Ok(saved_at_secs)
 }
 
-fn load_persisted_index() -> Result<Option<PersistedIndexEnvelope>, String> {
+fn load_persisted_index() -> Result<Option<(PersistedIndexEnvelope, bool)>, String> {
     let path = persisted_index_path()?;
-    if !path.exists() {
+    let backup = backup_path(&path);
+
+    if !path.exists() && !backup.exists() {
         return Ok(None);
     }
 
-    let content = fs::read_to_string(&path)
-        .map_err(|error| format!("Não foi possível ler o índice persistente: {error}"))?;
-    let envelope: PersistedIndexEnvelope = serde_json::from_str(&content)
-        .map_err(|error| format!("O índice persistente está corrompido: {error}"))?;
-
-    if envelope.schema_version != PERSISTENCE_SCHEMA {
-        return Ok(None);
+    if path.exists() {
+        match read_index_file(&path) {
+            Ok(envelope) => return Ok(Some((envelope, false))),
+            Err(primary_error) if !backup.exists() => {
+                return Err(format!("O índice persistente está corrompido: {primary_error}"));
+            }
+            Err(_) => {}
+        }
     }
 
-    Ok(Some(envelope))
+    let envelope = read_index_file(&backup)
+        .map_err(|error| format!("O índice e seu backup estão inválidos: {error}"))?;
+
+    let _ = fs::copy(&backup, &path);
+    Ok(Some((envelope, true)))
 }
 
 fn record_snapshot(report: &ScanReport) -> Result<(), String> {
     let path = snapshots_path()?;
-    let mut snapshots = if path.exists() {
-        let content = fs::read_to_string(&path)
-            .map_err(|error| format!("Não foi possível ler os snapshots: {error}"))?;
-        serde_json::from_str::<Vec<StorageSnapshot>>(&content).unwrap_or_default()
-    } else {
-        Vec::new()
-    };
+    let mut snapshots = read_json_with_backup::<Vec<StorageSnapshot>>(&path, "histórico de snapshots")?
+        .map(|(items, _)| items)
+        .unwrap_or_default();
 
     let created_at_secs = now_secs();
     snapshots.insert(
@@ -820,14 +934,9 @@ fn record_snapshot(report: &ScanReport) -> Result<(), String> {
 
 fn load_snapshot_history(root: &str, limit: usize) -> Result<Vec<StorageSnapshot>, String> {
     let path = snapshots_path()?;
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-
-    let content = fs::read_to_string(&path)
-        .map_err(|error| format!("Não foi possível ler os snapshots: {error}"))?;
-    let snapshots = serde_json::from_str::<Vec<StorageSnapshot>>(&content)
-        .map_err(|error| format!("O histórico de snapshots está corrompido: {error}"))?;
+    let snapshots = read_json_with_backup::<Vec<StorageSnapshot>>(&path, "histórico de snapshots")?
+        .map(|(items, _)| items)
+        .unwrap_or_default();
 
     let normalized_root = Path::new(root);
     Ok(snapshots
