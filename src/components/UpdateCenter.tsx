@@ -134,7 +134,8 @@ export function UpdateCenter() {
 
     try {
       await invoke("install_update", {
-        installerPath: downloaded.installerPath
+        installerPath: downloaded.installerPath,
+        expectedSha256: downloaded.sha256
       });
     } catch (reason) {
       setError(
