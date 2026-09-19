@@ -14,7 +14,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.7.0-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.7.1-5969e8?style=flat-square)
 
 </div>
 
@@ -103,6 +103,8 @@ flowchart LR
 | Validação SHA-256 do instalador | ✅ v0.6.0 |
 | Notas da release e controle de avisos | ✅ v0.6.1 |
 | Exportação JSON e CSV | ✅ v0.7.0 |
+| Tipografia ampliada / legibilidade | ✅ v0.7.1 |
+| Landing animada + apoio via Pix | ✅ v0.7.1 |
 | Android | 🗓️ Protótipo na v0.8 |
 
 ## v0.2.1 — Index & Search
@@ -450,6 +452,22 @@ A análise agora pode sair da tela sem sair do computador. A L.I.V.I.A. exporta 
 - [x] limite de 100 MB por exportação;
 - [x] nenhuma transmissão de dados durante a exportação.
 
+
+## v0.7.1 — Legibilidade + landing pública
+
+A v0.7.1 trata duas coisas que parecem pequenas até você ter que usar o produto de verdade: **texto legível** e uma página pública que não pareça um README usando blazer.
+
+### Entregas
+
+- [x] aumento sistemático das fontes de 7–11 px no aplicativo;
+- [x] reforço de títulos, métricas e falas da Lívia;
+- [x] landing page com hierarquia editorial e microanimações;
+- [x] expressões da Lívia recortadas individualmente para evitar ampliar a sprite sheet inteira;
+- [x] detecção de Windows/Linux e downloads via GitHub Releases;
+- [x] botão de apoio voluntário com Pix;
+- [x] QR Code Pix gerado localmente, sem serviço externo;
+- [x] Pix copia e cola e chave com botões de cópia;
+- [x] respeito a `prefers-reduced-motion`.
 
 ## Arquitetura
 
