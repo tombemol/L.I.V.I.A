@@ -44,7 +44,7 @@ function formatPublishedAt(value: string | null) {
 }
 
 export function UpdateCenter() {
-  const [currentVersion, setCurrentVersion] = useState("0.6.1");
+  const [currentVersion, setCurrentVersion] = useState("0.7.0");
   const [info, setInfo] = useState<UpdateInfo | null>(null);
   const [ignoredVersion, setIgnoredVersion] = useState<string | null>(() =>
     localStorage.getItem("livia-ignored-update")

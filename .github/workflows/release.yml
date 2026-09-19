@@ -46,19 +46,15 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            ### Atualização desta versão
+            ### Relatórios exportáveis
 
-            - notas da release agora aparecem dentro da central de atualizações;
-            - **Agora não** fecha o aviso sem alterar preferências;
-            - **Ignorar esta versão** silencia apenas aquela release;
-            - uma versão posterior volta a ser sinalizada automaticamente;
-            - versões ignoradas continuam disponíveis para download manual;
-            - download interno com progresso e validação SHA-256 obrigatória;
-            - segunda validação SHA-256 antes de abrir o instalador;
-            - prevenção de downgrade e execução restrita ao instalador temporário esperado;
-            - README alinhado ao estado atual do índice persistente e da aplicação.
-
-            A L.I.V.I.A. continua local-first: análise, histórico, recomendações e preferências permanecem no computador.
+            - novo botão **Exportar** no dashboard;
+            - JSON completo com relatório, snapshots locais e duplicatas confirmadas;
+            - CSV preparado para Excel e similares, com BOM UTF-8 e separador por ponto e vírgula;
+            - nome de arquivo sugerido com raiz analisada e horário;
+            - exportação permanece totalmente local, sem envio de dados;
+            - backend aceita apenas destinos JSON/CSV e limita cada exportação a 100 MB;
+            - central de atualização continua mostrando notas da release, progresso e validação SHA-256.
 
             Observação: esta pré-release ainda não possui assinatura Authenticode. O Windows SmartScreen pode exibir "Fornecedor desconhecido" até a adoção de um certificado de code signing confiável.
           releaseDraft: false

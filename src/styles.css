@@ -3283,3 +3283,114 @@ button:focus-visible {
     justify-content: space-between;
   }
 }
+
+
+/* v0.7.0 — report export */
+.report-export {
+  position: relative;
+}
+
+.report-export-popover {
+  position: fixed;
+  top: 62px;
+  right: 172px;
+  z-index: 118;
+  width: min(390px, calc(100vw - 36px));
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 12px;
+  color: var(--text);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 4%, var(--surface)), var(--surface));
+  box-shadow: 0 20px 64px color-mix(in srgb, #000 34%, transparent);
+}
+
+.report-export-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.report-export-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.report-export-head strong {
+  font-size: 12px;
+}
+
+.report-export-option {
+  width: 100%;
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.report-export-option:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.report-export-option:disabled {
+  cursor: wait;
+  opacity: .58;
+}
+
+.report-export-option > svg {
+  color: var(--accent);
+}
+
+.report-export-option > span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.report-export-option strong {
+  font-size: 10px;
+}
+
+.report-export-option small,
+.report-export-note {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.report-export-option b {
+  color: var(--muted-strong);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.report-export-note {
+  margin: 10px 0 0;
+}
+
+.report-export-status {
+  margin-top: 9px;
+  padding: 8px 9px;
+  border: 1px solid color-mix(in srgb, #62d58a 30%, var(--line));
+  border-radius: 7px;
+  color: var(--muted-strong);
+  background: color-mix(in srgb, #62d58a 6%, var(--surface-raised));
+  font-size: 8px;
+}
+
+@media (max-width: 900px) {
+  .report-export-popover {
+    right: 12px;
+  }
+}

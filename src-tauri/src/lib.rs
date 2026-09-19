@@ -900,6 +900,45 @@ fn open_in_explorer(path: String) -> Result<(), String> {
     }
 }
 
+#[tauri::command]
+fn save_report_file(path: String, content: String) -> Result<(), String> {
+    const MAX_EXPORT_BYTES: usize = 100 * 1024 * 1024;
+
+    if content.len() > MAX_EXPORT_BYTES {
+        return Err("O relatório excede o limite de 100 MB para exportação.".to_string());
+    }
+
+    let target = PathBuf::from(path);
+    if !target.is_absolute() {
+        return Err("Escolha um caminho absoluto para exportar o relatório.".to_string());
+    }
+
+    let extension = target
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+
+    if extension != "json" && extension != "csv" {
+        return Err("A L.I.V.I.A. exporta relatórios apenas em JSON ou CSV.".to_string());
+    }
+
+    if target.is_dir() {
+        return Err("O destino escolhido é uma pasta, não um arquivo.".to_string());
+    }
+
+    let parent = target
+        .parent()
+        .ok_or_else(|| "O caminho de exportação é inválido.".to_string())?;
+
+    if !parent.exists() {
+        return Err("A pasta escolhida para exportação não existe.".to_string());
+    }
+
+    fs::write(&target, content.as_bytes())
+        .map_err(|error| format!("Não foi possível gravar o relatório: {error}"))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -918,6 +957,7 @@ pub fn run() {
             cancel_scan,
             system_drive,
             open_in_explorer,
+            save_report_file,
             updater::check_for_update,
             updater::download_update,
             updater::install_update
