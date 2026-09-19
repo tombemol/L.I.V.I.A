@@ -1177,6 +1177,48 @@ pub fn run() {
 
 
 #[cfg(test)]
+mod persistence_tests {
+    use super::{backup_path, read_json_with_backup, write_json_atomic};
+    use serde_json::{json, Value};
+    use std::{fs, time::{SystemTime, UNIX_EPOCH}};
+
+    fn test_dir() -> std::path::PathBuf {
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        std::env::temp_dir().join(format!("livia-state-test-{stamp}"))
+    }
+
+    #[test]
+    fn recovers_previous_json_when_primary_is_corrupted() {
+        let dir = test_dir();
+        fs::create_dir_all(&dir).expect("create test dir");
+        let path = dir.join("state.json");
+
+        write_json_atomic(&path, &json!({ "generation": 1 })).expect("write generation 1");
+        write_json_atomic(&path, &json!({ "generation": 2 })).expect("write generation 2");
+        assert!(backup_path(&path).exists());
+
+        fs::write(&path, b"{ definitely-not-json").expect("corrupt primary");
+
+        let (value, recovered) = read_json_with_backup::<Value>(&path, "estado de teste")
+            .expect("recover backup")
+            .expect("state exists");
+
+        assert!(recovered);
+        assert_eq!(value["generation"], 1);
+
+        let restored: Value = serde_json::from_str(
+            &fs::read_to_string(&path).expect("read restored primary")
+        ).expect("restored primary is valid");
+        assert_eq!(restored["generation"], 1);
+
+        let _ = fs::remove_dir_all(dir);
+    }
+}
+
+#[cfg(test)]
 mod cleanup_tests {
     use super::{is_protected_path, same_path};
     use std::path::Path;
