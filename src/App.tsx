@@ -475,6 +475,7 @@ export default function App() {
     setLastRestore(null);
     setLastRefresh(null);
     setLoadedFromMemory(false);
+    setRecoveredFromBackup(false);
     setProgress({
       root: path,
       filesScanned: 0,
@@ -526,6 +527,7 @@ export default function App() {
     setLastCleanup(null);
     setLastRestore(null);
     setLoadedFromMemory(false);
+    setRecoveredFromBackup(false);
     setProgress({
       root: report.indexRoot,
       filesScanned: 0,
