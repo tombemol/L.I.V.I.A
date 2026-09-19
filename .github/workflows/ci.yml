@@ -158,6 +158,9 @@ jobs:
       - name: Initialize Tauri Android project
         run: npm run tauri -- android init --ci
 
+      - name: Validate signing patch against generated Gradle
+        run: npm run android:signing:check
+
       - name: Generate official Android launcher icons
         run: npm run tauri -- icon public/livia/livia-mark.svg
 
