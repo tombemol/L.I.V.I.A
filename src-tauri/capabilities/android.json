@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "android-storage",
+  "description": "Acesso somente às pastas que o usuário escolhe explicitamente pelo Storage Access Framework.",
+  "windows": ["main"],
+  "platforms": ["android"],
+  "permissions": [
+    "core:default",
+    "android-fs:default"
+  ]
+}
