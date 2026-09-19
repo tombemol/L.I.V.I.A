@@ -46,20 +46,19 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            ### v0.8.1 — protótipo Android via SAF
+            ### v0.8.1 — Android: armazenamento amplo + identidade correta
 
-            - primeiro APK Android funcional da L.I.V.I.A.;
-            - seleção de pasta pelo Storage Access Framework;
-            - análise recursiva de metadados somente dentro da árvore autorizada;
-            - dashboard móvel com maiores arquivos e distribuição por pasta/extensão;
-            - interface touch-first com Lívia, tema claro e escuro;
+            - novo modo **Analisar armazenamento inteiro** no Android;
+            - solicitação explícita e opcional de acesso amplo ao armazenamento compartilhado;
+            - o seletor SAF continua disponível para analisar somente uma pasta;
+            - o ícone da barra superior agora usa a marca oficial da L.I.V.I.A.;
             - Android permanece somente leitura nesta fase;
-            - nenhuma permissão MANAGE_EXTERNAL_STORAGE;
+            - áreas privadas protegidas pelo Android continuam fora do escopo da análise;
             - Windows continua via NSIS;
             - Linux continua via AppImage e .deb;
             - checksums SHA-256 publicados para todos os artefatos.
 
-            O APK Android desta release é uma build debug ARM64 de protótipo. A distribuição Android pública e assinada continua planejada para a v1.1.
+            O APK Android desta release continua sendo uma build debug ARM64 de protótipo. A distribuição Android pública e assinada continua planejada para a v1.1.
 
             Observação: a build Windows ainda não possui assinatura Authenticode confiável e pode acionar o SmartScreen.
           releaseDraft: false
