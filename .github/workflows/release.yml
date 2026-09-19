@@ -46,40 +46,19 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            - atualização integrada: a L.I.V.I.A. consulta GitHub Releases, baixa o instalador e valida SHA-256 antes de executá-lo;
-            - central de atualizações com progresso, verificação manual e aviso automático discreto;
-            - leitura inteligente local com prioridades baseadas em snapshots, crescimento, fila de revisão e duplicatas confirmadas;
-            - histórico visual do armazenamento com gráfico temporal e filtros de período;
-            - comparação de crescimento/redução por pasta e extensão;
-            - snapshots agora guardam breakdown resumido de pastas e tipos;
-            - Lívia reage ao crescimento ou redução desde o snapshot anterior;
-            - atualização incremental NTFS via USN Journal quando o checkpoint continua válido;
-            - fallback automático para reconstrução completa quando a atualização incremental não é segura;
-            - status da atualização incremental exibido no dashboard e explicado pela Lívia;
-            - índice persistente restaurado automaticamente entre execuções;
-            - snapshots locais do armazenamento e mini timeline no dashboard;
-            - delta de crescimento/redução entre os snapshots mais recentes;
-            - Lívia reconhece quando recuperou um índice da memória local;
-            - desfazer seguro durante a sessão para itens identificados de forma inequívoca na Lixeira;
-            - histórico de limpeza mais rico, sem persistir caminhos ou identificadores da Lixeira;
-            - seleção assistida de cópias em grupos de duplicatas confirmadas;
-            - Lívia reage à restauração e ao fluxo de duplicatas;
-            - limpeza assistida com seleção múltipla e revisão antes da ação;
-            - envio para a Lixeira do Windows, sem exclusão permanente;
-            - validação do arquivo novamente antes da limpeza e proteção da pasta do Windows;
-            - histórico local resumido das operações de limpeza;
-            - Lívia reage à seleção e conclusão da limpeza;
-            - índice de sessão e busca global sem revarrer o disco;
-            - navegação instantânea pelo índice e aceleração NTFS/MFT quando disponível;
-            - confirmação de duplicatas em duas etapas com BLAKE3;
-            - cálculo do espaço potencialmente recuperável por duplicatas confirmadas;
-            - modos Mapa/Pizza para pastas e Lista/Pizza para extensões;
-            - preferências de visualização persistentes;
-            - Lívia como guia contextual com os assets chibi oficiais;
-            - expressões Normal, Feliz, Explicando, Julgando, Preocupada e Escaneando;
-            - explicações contextuais para tipos de arquivo e comentários sobre duplicatas/arquivos antigos;
-            - interface desktop com temas claro e escuro;
-            - análise, hashing e recomendações continuam somente leitura.
+            ### Atualização desta versão
+
+            - notas da release agora aparecem dentro da central de atualizações;
+            - **Agora não** fecha o aviso sem alterar preferências;
+            - **Ignorar esta versão** silencia apenas aquela release;
+            - uma versão posterior volta a ser sinalizada automaticamente;
+            - versões ignoradas continuam disponíveis para download manual;
+            - download interno com progresso e validação SHA-256 obrigatória;
+            - segunda validação SHA-256 antes de abrir o instalador;
+            - prevenção de downgrade e execução restrita ao instalador temporário esperado;
+            - README alinhado ao estado atual do índice persistente e da aplicação.
+
+            A L.I.V.I.A. continua local-first: análise, histórico, recomendações e preferências permanecem no computador.
 
             Observação: esta pré-release ainda não possui assinatura Authenticode. O Windows SmartScreen pode exibir "Fornecedor desconhecido" até a adoção de um certificado de code signing confiável.
           releaseDraft: false
