@@ -2829,3 +2829,116 @@ button:focus-visible {
     flex: 1;
   }
 }
+
+
+/* v0.5.1 — leitura inteligente */
+.storage-insights {
+  margin-top: 14px;
+}
+
+.insight-list {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.insight-row {
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: 34px 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.insight-rank {
+  color: var(--muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.insight-icon {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--muted-strong);
+  background: var(--surface-raised);
+}
+
+.priority-alta .insight-icon {
+  color: #e29a55;
+  border-color: color-mix(in srgb, #e29a55 44%, var(--line));
+  background: color-mix(in srgb, #e29a55 8%, var(--surface-raised));
+}
+
+.priority-média .insight-icon {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-raised));
+}
+
+.insight-main {
+  min-width: 0;
+}
+
+.insight-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.insight-title-line strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insight-priority {
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.priority-alta .insight-priority {
+  color: #e29a55;
+  border-color: color-mix(in srgb, #e29a55 42%, var(--line));
+}
+
+.priority-média .insight-priority {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+}
+
+.insight-main p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.insight-amount {
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .insight-row {
+    grid-template-columns: 24px 30px minmax(0, 1fr);
+  }
+
+  .insight-amount {
+    grid-column: 3;
+    margin-top: -4px;
+  }
+}
