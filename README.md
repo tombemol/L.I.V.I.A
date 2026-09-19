@@ -11,6 +11,7 @@
 **Entenda o que ocupa seu disco, pesquise o índice inteiro e navegue sem ficar reescaneando a mesma árvore.**
 
 ![Windows](https://img.shields.io/badge/Windows-desktop-5969e8?style=flat-square)
+![Linux](https://img.shields.io/badge/Linux-AppImage%20%2B%20deb-5969e8?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
@@ -627,7 +628,6 @@ flowchart TD
     V7 --> V73[v0.7.3 Linux desktop]
     V73 --> V8[v0.8 Protótipo Android]
     V73 --> I[v1.0 Distribuição assinada]
-    V8 --> V11[v1.1 Android público]
     V8 --> V11[v1.1 Android público]
 ```
 
