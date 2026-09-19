@@ -12,11 +12,11 @@
 
 ![Windows](https://img.shields.io/badge/Windows-desktop-5969e8?style=flat-square)
 ![Linux](https://img.shields.io/badge/Linux-AppImage%20%2B%20deb-5969e8?style=flat-square)
-![Android](https://img.shields.io/badge/Android-v0.9.0%20prototype-5969e8?style=flat-square)
+![Android](https://img.shields.io/badge/Android-v0.9.1%20prototype-5969e8?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-20242c?style=flat-square)
 ![Rust](https://img.shields.io/badge/Rust-scanner-b7410e?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.9.0-5969e8?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.9.1-5969e8?style=flat-square)
 
 </div>
 
@@ -24,7 +24,7 @@
 
 ## Visão geral
 
-A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux, agora também com um **protótipo Android na v0.9.0**. No desktop, ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir. No Android, o usuário pode continuar escolhendo apenas uma pasta via Storage Access Framework ou conceder, explicitamente, acesso amplo ao armazenamento compartilhado para uma análise mais completa.
+A **L.I.V.I.A.** é um analisador de armazenamento local-first para Windows e Linux, agora também com um **protótipo Android na v0.9.1**. No desktop, ela percorre pastas e unidades, organiza consumo por diretório e extensão, mostra os maiores arquivos e aponta itens que merecem revisão. No Windows, unidades NTFS elegíveis ainda ganham os caminhos acelerados de MFT/USN; no Linux, a leitura usa o scanner compatível baseado em WalkDir. No Android, o usuário pode continuar escolhendo apenas uma pasta via Storage Access Framework ou conceder, explicitamente, acesso amplo ao armazenamento compartilhado para uma análise mais completa.
 
 Na **v0.2.1**, a análise deixa de ser apenas um relatório descartável e passa a construir um **índice de sessão**. Busca, filtros e drill-down trabalham nesse índice em vez de obrigar o disco a reviver a mesma caminhada toda vez que o usuário clica numa pasta. Um conceito revolucionário conhecido como “não fazer trabalho duas vezes”.
 
@@ -115,6 +115,21 @@ flowchart LR
 | Android: ícone oficial no launcher | ✅ v0.8.2 protótipo |
 | Índice com checksum, backup e recuperação automática | ✅ v0.9.0 |
 | Pipeline Android release assinada (AAB + APK) | ✅ preparação v1.1 |
+| Release idempotente / sem republicação silenciosa | ✅ v0.9.1 |
+
+## v0.9.1 — Hotfix de distribuição
+
+A v0.9.1 consolida o hardening da 0.9 e corrige a própria esteira de publicação. A pipeline agora recusa republicar automaticamente uma versão que já existe no GitHub Releases; uma republicação passa a exigir ação manual explícita.
+
+### Entregas
+
+- [x] release automática idempotente por versão/tag;
+- [x] opção manual `republish` para recuperação intencional;
+- [x] separação de canal estável e prerelease no updater;
+- [x] preparação de publisher Authenticode da v1.0;
+- [x] preparação de AAB/APK assinados da v1.1;
+- [x] validação do signing patch Android contra o template real do Tauri;
+- [x] documentação dos bloqueios externos em issues do repositório.
 
 ## Preparação da v1.1 — Android público e assinado
 
