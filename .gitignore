@@ -13,3 +13,4 @@ src-tauri/target/
 Thumbs.db
 *.log
 npm-debug.log*
+src-tauri/gen/
