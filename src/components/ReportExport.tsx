@@ -144,12 +144,16 @@ export function ReportExport({
 
       if (!path) return;
 
+      const targetPath = path.toLocaleLowerCase("pt-BR").endsWith(`.${format}`)
+        ? path
+        : `${path}.${format}`;
+
       const content =
         format === "json"
           ? buildJson(report, snapshots, duplicateReport)
           : buildCsv(report, snapshots, duplicateReport);
 
-      await invoke("save_report_file", { path, content });
+      await invoke("save_report_file", { path: targetPath, content });
       setStatus(
         format === "json"
           ? "Relatório completo exportado."
