@@ -46,6 +46,8 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
+            - atualização integrada: a L.I.V.I.A. consulta GitHub Releases, baixa o instalador e valida SHA-256 antes de executá-lo;
+            - central de atualizações com progresso, verificação manual e aviso automático discreto;
             - leitura inteligente local com prioridades baseadas em snapshots, crescimento, fila de revisão e duplicatas confirmadas;
             - histórico visual do armazenamento com gráfico temporal e filtros de período;
             - comparação de crescimento/redução por pasta e extensão;
@@ -83,3 +85,21 @@ jobs:
           releaseDraft: false
           prerelease: true
           args: --bundles nsis
+
+      - name: Publicar SHA-256 do instalador
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe" | Select-Object -First 1
+
+          if (-not $installer) {
+            throw "Instalador NSIS não encontrado para gerar checksum."
+          }
+
+          $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          $checksum = "$($installer.FullName).sha256"
+          Set-Content -Path $checksum -Value "$hash  $($installer.Name)" -NoNewline
+
+          gh release upload "v$version" $checksum --clobber
