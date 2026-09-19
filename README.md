@@ -98,6 +98,7 @@ flowchart LR
 | Atualização incremental via USN Journal | ✅ v0.4.1 |
 | Histórico visual do armazenamento | ✅ v0.5.0 |
 | Crescimento por pasta e extensão | ✅ v0.5.0 |
+| Leitura inteligente e prioridades locais | ✅ v0.5.1 |
 | Android | 🗓️ Futuro |
 
 ## v0.2.1 — Index & Search
@@ -361,6 +362,25 @@ flowchart LR
 
 Snapshots anteriores à v0.5 continuam válidos. Eles aparecem no gráfico de tamanho total, mas só novos snapshots possuem breakdown detalhado por pasta e extensão. Inventar dados históricos que nunca foram coletados seria muito eficiente, pena que também seria mentira.
 
+
+## v0.5.1 — Leitura inteligente
+
+A L.I.V.I.A. agora cruza os dados que já coleta para montar uma fila de atenção local e explicável. Não existe “IA mágica” decidindo o destino dos arquivos: as prioridades vêm de regras visíveis sobre crescimento, tamanho, idade e duplicatas confirmadas.
+
+### Entregas
+
+- [x] painel **O que merece atenção agora**;
+- [x] priorização alta, média e baixa;
+- [x] espaço recuperável de duplicatas confirmadas entra na análise;
+- [x] fila de revisão considera tamanho total dos itens sinalizados;
+- [x] crescimento total entre os dois snapshots mais recentes;
+- [x] pasta com maior crescimento recente;
+- [x] extensão com maior crescimento recente;
+- [x] ordenação determinística e totalmente local;
+- [x] nenhuma remoção automática disparada pelos insights;
+- [x] layout responsivo em tema claro e escuro.
+
+
 ## Arquitetura
 
 ```mermaid
@@ -474,7 +494,9 @@ flowchart TD
     U --> M[v0.4.0 Memória persistente]
     M --> H[v0.4.1 USN Journal]
     H --> V5[v0.5.0 Histórico visual]
-    H --> I[v1.0 Distribuição assinada]
+    V5 --> V51[v0.5.1 Leitura inteligente]
+    V51 --> V6[v0.6.0 Atualização no app]
+    V6 --> I[v1.0 Distribuição assinada]
     E -. plataforma paralela .-> J[Android]
 ```
 
