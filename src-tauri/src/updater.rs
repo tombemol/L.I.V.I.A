@@ -80,6 +80,10 @@ fn parse_release_version(tag: &str) -> Option<Version> {
     Version::parse(tag.trim().trim_start_matches('v')).ok()
 }
 
+fn release_channel_allowed(current: &Version, release_prerelease: bool) -> bool {
+    !current.pre.is_empty() || !release_prerelease
+}
+
 fn installer_asset(release: &GithubRelease) -> Option<GithubAsset> {
     #[cfg(target_os = "windows")]
     {
@@ -178,7 +182,7 @@ async fn latest_candidate() -> Result<Option<ReleaseCandidate>, String> {
 
         // Builds estáveis não saltam para release candidates/prereleases.
         // Uma build prerelease (ex.: 1.0.0-rc.1) ainda pode acompanhar o canal de testes.
-        if current.pre.is_empty() && release.prerelease {
+        if !release_channel_allowed(&current, release.prerelease) {
             continue;
         }
 
@@ -542,7 +546,7 @@ pub fn install_update(
 
 #[cfg(test)]
 mod tests {
-    use super::{checksum_from_text, parse_release_version};
+    use super::{checksum_from_text, parse_release_version, release_channel_allowed};
 
     #[test]
     fn parses_prefixed_release_version() {
@@ -558,12 +562,17 @@ mod tests {
     }
 
     #[test]
-    fn stable_versions_have_no_prerelease_identifier() {
+    fn stable_channel_rejects_prerelease_releases() {
         let stable = parse_release_version("v1.0.0").expect("stable version");
-        let candidate = parse_release_version("v1.1.0-rc.1").expect("prerelease version");
+        assert!(!release_channel_allowed(&stable, true));
+        assert!(release_channel_allowed(&stable, false));
+    }
 
-        assert!(stable.pre.is_empty());
-        assert!(!candidate.pre.is_empty());
+    #[test]
+    fn prerelease_channel_accepts_prerelease_releases() {
+        let candidate = parse_release_version("v1.1.0-rc.1").expect("prerelease version");
+        assert!(release_channel_allowed(&candidate, true));
+        assert!(release_channel_allowed(&candidate, false));
     }
 
     #[test]
