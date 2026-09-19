@@ -46,7 +46,7 @@ jobs:
           releaseBody: |
             L.I.V.I.A. v__VERSION__
 
-            ### v0.8.0 — protótipo Android via SAF
+            ### v0.8.1 — protótipo Android via SAF
 
             - primeiro APK Android funcional da L.I.V.I.A.;
             - seleção de pasta pelo Storage Access Framework;
