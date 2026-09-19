@@ -215,6 +215,16 @@ h2 em {
   font-weight: 500;
 }
 
+.hero h1 em {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  font-size: .82em;
+  line-height: 1.02;
+  letter-spacing: -.045em;
+  white-space: nowrap;
+}
+
 .lead {
   max-width: 680px;
   color: #b7c0cd;
@@ -1341,6 +1351,33 @@ footer {
   to { transform: scaleY(1); opacity: 1; }
 }
 
+@media (max-width: 1280px) {
+  .section {
+    width: min(1160px, calc(100% - 36px));
+  }
+
+  .hero {
+    grid-template-columns: minmax(0, .9fr) minmax(500px, 1.1fr);
+    gap: 42px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3.4rem, 6vw, 5.75rem);
+  }
+
+  .hero h1 em {
+    font-size: .76em;
+  }
+
+  .floating-callout.callout-left {
+    left: -10px;
+  }
+
+  .floating-callout.callout-right {
+    right: -10px;
+  }
+}
+
 @media (max-width: 1020px) {
   .hero {
     grid-template-columns: 1fr;
@@ -1472,7 +1509,7 @@ footer {
 
   .expression .site-livia-portrait {
     width: 108px;
-    height: 108px;
+    height: 85px;
   }
 
   .download-section { padding-bottom: 85px; }
