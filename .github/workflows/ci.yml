@@ -152,6 +152,9 @@ jobs:
       - name: Frontend build
         run: npm run build
 
+      - name: Test Android release signing patcher
+        run: npm run android:signing:test
+
       - name: Initialize Tauri Android project
         run: npm run tauri -- android init --ci
 
