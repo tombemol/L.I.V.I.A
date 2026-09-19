@@ -189,7 +189,7 @@ export function UpdateCenter() {
       >
         <DownloadCloud size={13} />
         <span>v{currentVersion}</span>
-        {info?.available ? <i aria-label="Atualização disponível" /> : null}
+        {info?.available && !isIgnored ? <i aria-label="Atualização disponível" /> : null}
       </button>
 
       {open ? (
