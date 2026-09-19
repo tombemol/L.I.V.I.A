@@ -1,6 +1,6 @@
 [package]
 name = "livia"
-version = "0.6.1"
+version = "0.7.0"
 description = "Leitura Inteligente e Visualização de Informações de Armazenamento"
 authors = ["Antonio Silva"]
 edition = "2021"
